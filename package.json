@@ -1,7 +1,7 @@
 {
   "name": "blind-navigator-ai",
   "version": "1.0.0",
-  "description": "An agentic AI Chrome extension that helps blind users navigate any website through voice commands and audio feedback",
+  "description": "An agentic AI Chrome extension that helps blind users navigate any website through text input and audio feedback",
   "main": "background.js",
   "scripts": {
     "build": "echo 'No build process needed for Chrome extension'",
@@ -12,7 +12,7 @@
   "keywords": [
     "accessibility",
     "blind",
-    "voice",
+    "text",
     "ai",
     "chrome-extension",
     "navigation",

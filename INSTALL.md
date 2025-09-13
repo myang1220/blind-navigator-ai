@@ -17,7 +17,7 @@
 3. **First Use**
    - Click the Blind Navigator AI icon in your toolbar
    - The extension will open and be ready to use
-   - Try saying "Tell me about this page" or "What can I do here?"
+   - Try typing "Tell me about this page" or "What can I do here?"
 
 ## Keyboard Shortcuts
 
@@ -26,7 +26,11 @@
 
 ## Basic Usage
 
-### Voice Commands
+### Input Methods
+- **Text Input**: Type directly in the text box and press Enter or click Submit
+- **Manual Input**: Paste text from external tools like Wispr
+
+### Text Commands
 - **"Tell me about this page"** - Get a summary of the website
 - **"What can I do here?"** - Get action suggestions
 - **"Click the [button name]"** - Click on specific elements
@@ -35,8 +39,18 @@
 
 ### Text Input
 - Type your instructions in the text box
-- Press Enter to execute
-- Use the microphone button for voice input
+- Press Enter or Ctrl+Enter to execute
+- Paste text from external tools like Wispr
+
+## Using Wispr for Speech-to-Text
+
+Since Wispr doesn't require an API key, you can use it directly:
+
+1. **Go to Wispr**: Visit [wispr.ai](https://wispr.ai) in your browser
+2. **Record or Upload**: Record your voice or upload an audio file
+3. **Copy Text**: Copy the transcribed text from Wispr
+4. **Paste in Extension**: Paste the text into the extension popup
+5. **Submit**: Press Enter or click Submit to process
 
 ## Optional: API Configuration
 
@@ -45,22 +59,13 @@ For enhanced functionality, you can configure API keys:
 1. **Open Settings**: Right-click extension icon → Options
 2. **Configure APIs**:
    - **Cerebras API**: For intelligent instruction interpretation
-   - **Amazon Polly**: For high-quality text-to-speech
-   - **Wispr API**: For enhanced speech-to-text
 3. **Save Settings**: Click "Save Settings"
 
 ### Getting API Keys
 
 - **Cerebras**: Sign up at [cerebras.ai](https://cerebras.ai)
-- **Amazon Polly**: Set up AWS account and enable Polly service
-- **Wispr**: Sign up at [wispr.ai](https://wispr.ai)
 
 ## Troubleshooting
-
-### Voice Input Not Working
-- Check microphone permissions in Chrome settings
-- Ensure you're using a supported browser (Chrome 88+)
-- Try refreshing the page and reopening the extension
 
 ### Actions Not Executing
 - Make sure the website has finished loading
@@ -74,7 +79,8 @@ For enhanced functionality, you can configure API keys:
 
 ## Features
 
-- ✅ Voice input and output
+- ✅ Text input and audio output
+- ✅ Manual text input
 - ✅ Website analysis and summarization
 - ✅ Action suggestions
 - ✅ Click, fill, and scroll actions

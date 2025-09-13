@@ -1,14 +1,15 @@
 # Blind Navigator AI - Chrome Extension
 
-An agentic AI Chrome extension that helps blind users navigate any website through voice commands and audio feedback.
+An agentic AI Chrome extension that helps blind users navigate any website through text input and audio feedback.
 
 ## Features
 
-- **Voice-First Interface**: Keyboard shortcut activation with voice input/output
+- **Text-First Interface**: Keyboard shortcut activation with text input and audio output
 - **Intelligent Website Analysis**: Generates clear summaries and action suggestions
 - **AI-Powered Navigation**: Uses Cerebras API to interpret and execute user instructions
 - **Universal Compatibility**: Works on any website regardless of accessibility features
-- **Audio Feedback**: Amazon Polly integration for clear audio responses
+- **Audio Feedback**: Built-in browser TTS for clear audio responses
+- **Manual Text Input**: Support for pasting text from external tools like Wispr
 
 ## Installation
 
@@ -22,28 +23,17 @@ An agentic AI Chrome extension that helps blind users navigate any website throu
 
 ### API Keys (Optional but Recommended)
 
-For full functionality, you'll need to configure API keys:
+For enhanced functionality, you can configure API keys:
 
 1. **Cerebras API**: For intelligent instruction interpretation
    - Sign up at [Cerebras AI](https://cerebras.ai)
    - Get your API key from the dashboard
    - Add it to the extension settings
 
-2. **Amazon Polly**: For high-quality text-to-speech
-   - Sign up for AWS and enable Polly service
-   - Create an IAM user with Polly permissions
-   - Add your AWS credentials to the extension
-
-3. **Wispr API**: For enhanced speech-to-text
-   - Sign up at [Wispr](https://wispr.ai)
-   - Get your API key
-   - Add it to the extension settings
-
 ### Without API Keys
 
-The extension will work with built-in browser features:
-- Uses browser's built-in speech recognition
-- Uses browser's built-in speech synthesis
+The extension works perfectly with built-in browser features:
+- Uses browser's built-in text-to-speech
 - Uses simple rule-based instruction interpretation
 
 ## Usage
@@ -53,7 +43,12 @@ The extension will work with built-in browser features:
 - **Keyboard Shortcut**: `Ctrl+Shift+V` (Windows/Linux) or `Cmd+Shift+V` (Mac)
 - **Click Extension Icon**: Click the Blind Navigator AI icon in your toolbar
 
-### Voice Commands
+### Input Methods
+
+1. **Text Input**: Type directly in the text box and press Enter or click Submit
+2. **Manual Input**: Paste text from external tools like Wispr
+
+### Text Commands
 
 1. **Get Website Summary**: "Tell me about this page" or "What's on this website"
 2. **Get Action Suggestions**: "What can I do here?" or "Show me options"
@@ -85,8 +80,12 @@ blind/
 ├── popup.js              # Popup functionality
 ├── content.js            # Content script for DOM interaction
 ├── background.js         # Background script for API communication
+├── settings.html         # Settings page
+├── settings.js           # Settings functionality
 ├── config.js             # Configuration and constants
-└── README.md             # This file
+├── package.json          # Project metadata
+├── README.md             # This file
+└── INSTALL.md            # Installation guide
 ```
 
 ## Technical Details
@@ -104,14 +103,14 @@ blind/
 - Coordinates between popup and content scripts
 
 ### Popup Interface (`popup.html` + `popup.js`)
-- Voice input/output interface
+- Text input interface
+- Manual text input for external tools
 - User interaction controls
 - Status updates and feedback
 
 ## Browser Compatibility
 
 - Chrome 88+ (Manifest V3)
-- Requires microphone access for voice input
 - Requires tab permissions for website interaction
 
 ## Privacy & Security
@@ -122,11 +121,6 @@ blind/
 - Website data is only analyzed for navigation purposes
 
 ## Troubleshooting
-
-### Voice Input Not Working
-- Check microphone permissions in Chrome settings
-- Ensure you're using a supported browser
-- Try refreshing the page and reopening the extension
 
 ### Actions Not Executing
 - Make sure the website has finished loading

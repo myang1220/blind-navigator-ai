@@ -1,20 +1,17 @@
 class BlindNavigatorPopup {
     constructor() {
-        this.isRecording = false;
-        this.recognition = null;
         this.audioContext = null;
         this.isProcessing = false;
         
         this.initializeElements();
         this.setupEventListeners();
-        this.initializeSpeechRecognition();
         this.initializeAudio();
     }
     
     initializeElements() {
         this.statusEl = document.getElementById('status');
-        this.voiceInput = document.getElementById('voiceInput');
-        this.voiceBtn = document.getElementById('voiceBtn');
+        this.textInput = document.getElementById('textInput');
+        this.submitBtn = document.getElementById('submitBtn');
         this.options = document.getElementById('options');
         this.loading = document.getElementById('loading');
         this.summaryBtn = document.getElementById('summaryBtn');
@@ -24,13 +21,16 @@ class BlindNavigatorPopup {
     }
     
     setupEventListeners() {
-        this.voiceBtn.addEventListener('click', () => this.toggleVoiceRecording());
-        this.voiceInput.addEventListener('keypress', (e) => {
+        // Text input
+        this.submitBtn.addEventListener('click', () => this.submitTextInput());
+        this.textInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
-                this.processInstruction(this.voiceInput.value);
+                e.preventDefault(); // Prevent default behavior (new line in textarea)
+                this.submitTextInput();
             }
         });
         
+        // Options
         this.summaryBtn.addEventListener('click', () => this.requestSummary());
         this.suggestionsBtn.addEventListener('click', () => this.requestSuggestions());
         this.directBtn.addEventListener('click', () => this.showDirectInput());
@@ -42,65 +42,17 @@ class BlindNavigatorPopup {
         });
     }
     
-    initializeSpeechRecognition() {
-        if ('webkitSpeechRecognition' in window) {
-            this.recognition = new webkitSpeechRecognition();
-            this.recognition.continuous = false;
-            this.recognition.interimResults = false;
-            this.recognition.lang = 'en-US';
-            
-            this.recognition.onstart = () => {
-                this.isRecording = true;
-                this.voiceBtn.classList.add('recording');
-                this.updateStatus('Listening...');
-            };
-            
-            this.recognition.onresult = (event) => {
-                const transcript = event.results[0][0].transcript;
-                this.voiceInput.value = transcript;
-                this.processInstruction(transcript);
-            };
-            
-            this.recognition.onerror = (event) => {
-                console.error('Speech recognition error:', event.error);
-                this.updateStatus('Voice recognition error. Please try again.');
-                this.stopRecording();
-            };
-            
-            this.recognition.onend = () => {
-                this.stopRecording();
-            };
-        } else {
-            this.voiceBtn.style.display = 'none';
-            this.updateStatus('Voice input not supported. Please type your instructions.');
+    submitTextInput() {
+        const instruction = this.textInput.value.trim();
+        if (instruction) {
+            this.processInstruction(instruction);
+            this.textInput.value = ''; // Clear the input after submission
         }
     }
     
     initializeAudio() {
         // Initialize audio context for text-to-speech
         this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    }
-    
-    toggleVoiceRecording() {
-        if (this.isRecording) {
-            this.stopRecording();
-        } else {
-            this.startRecording();
-        }
-    }
-    
-    startRecording() {
-        if (this.recognition) {
-            this.recognition.start();
-        }
-    }
-    
-    stopRecording() {
-        if (this.recognition) {
-            this.recognition.stop();
-        }
-        this.isRecording = false;
-        this.voiceBtn.classList.remove('recording');
     }
     
     updateStatus(message) {
@@ -196,15 +148,15 @@ class BlindNavigatorPopup {
         } catch (error) {
             console.error('Error getting suggestions:', error);
             this.updateStatus('Error getting suggestions');
-            this.speak('Error getting suggestions');
+            this.speak('Error generating suggestions');
         } finally {
             this.hideLoading();
         }
     }
     
     showDirectInput() {
-        this.voiceInput.focus();
-        this.updateStatus('Type or speak your instruction');
+        this.textInput.focus();
+        this.updateStatus('Type your instruction');
     }
     
     openSettings() {
@@ -213,8 +165,12 @@ class BlindNavigatorPopup {
     
     async speak(text) {
         if ('speechSynthesis' in window) {
+            // Get the saved TTS speed setting
+            const result = await chrome.storage.sync.get(['ttsSpeed']);
+            const speed = result.ttsSpeed || 1.0;
+            
             const utterance = new SpeechSynthesisUtterance(text);
-            utterance.rate = 0.9;
+            utterance.rate = speed;
             utterance.pitch = 1;
             utterance.volume = 1;
             speechSynthesis.speak(utterance);

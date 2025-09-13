@@ -1,18 +1,12 @@
 class BlindNavigatorBackground {
     constructor() {
         this.websiteData = null;
-        this.apiKeys = {
-            cerebras: null,
-            polly: null,
-            wispr: null
-        };
         
         this.initialize();
     }
     
     initialize() {
         this.setupMessageListener();
-        this.loadApiKeys();
         this.setupKeyboardShortcuts();
     }
     
@@ -30,28 +24,6 @@ class BlindNavigatorBackground {
         });
     }
     
-    async loadApiKeys() {
-        try {
-            const result = await chrome.storage.sync.get(['cerebrasKey', 'pollyKey', 'wisprKey']);
-            this.apiKeys.cerebras = result.cerebrasKey;
-            this.apiKeys.polly = result.pollyKey;
-            this.apiKeys.wispr = result.wisprKey;
-        } catch (error) {
-            console.error('Error loading API keys:', error);
-        }
-    }
-    
-    async saveApiKeys() {
-        try {
-            await chrome.storage.sync.set({
-                cerebrasKey: this.apiKeys.cerebras,
-                pollyKey: this.apiKeys.polly,
-                wisprKey: this.apiKeys.wispr
-            });
-        } catch (error) {
-            console.error('Error saving API keys:', error);
-        }
-    }
     
     async toggleExtension() {
         try {
@@ -129,119 +101,13 @@ class BlindNavigatorBackground {
     
     async interpretInstruction(instruction) {
         try {
-            if (!this.apiKeys.cerebras) {
-                // Fallback to simple rule-based interpretation
-                return this.simpleInterpretation(instruction);
-            }
-            
-            const prompt = this.buildCerebrasPrompt(instruction);
-            const response = await this.callCerebrasAPI(prompt);
-            
-            return this.parseCerebrasResponse(response);
+            // Use simple rule-based interpretation (no API required)
+            return this.simpleInterpretation(instruction);
         } catch (error) {
             console.error('Error interpreting instruction:', error);
-            return this.simpleInterpretation(instruction);
-        }
-    }
-    
-    buildCerebrasPrompt(instruction) {
-        const context = {
-            website: {
-                title: this.websiteData.title,
-                url: this.websiteData.url,
-                elements: this.websiteData.interactableElements
-            },
-            instruction: instruction
-        };
-        
-        return `You are an AI assistant helping a blind user navigate a website. 
-        
-Website Context:
-- Title: ${context.website.title}
-- URL: ${context.website.url}
-- Available elements: ${JSON.stringify(context.website.elements.slice(0, 10))}
-
-User Instruction: "${instruction}"
-
-Based on the user's instruction and the available website elements, determine what action to take. 
-
-Return a JSON response with this structure:
-{
-    "action": {
-        "type": "click|fill|navigate|scroll",
-        "selector": "CSS selector for the element",
-        "text": "Description of what will be clicked/filled",
-        "value": "Value to fill (for fill actions)",
-        "url": "URL to navigate to (for navigate actions)",
-        "direction": "up|down|top|bottom (for scroll actions)"
-    },
-    "confidence": 0.0-1.0,
-    "reasoning": "Brief explanation of why this action was chosen"
-}
-
-If the instruction is unclear or no suitable action can be determined, return:
-{
-    "action": null,
-    "confidence": 0.0,
-    "reasoning": "Explanation of why no action could be determined"
-}`;
-    }
-    
-    async callCerebrasAPI(prompt) {
-        try {
-            const response = await fetch('https://api.cerebras.ai/v1/chat/completions', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${this.apiKeys.cerebras}`
-                },
-                body: JSON.stringify({
-                    model: 'cerebras-llama-2-7b-chat',
-                    messages: [
-                        {
-                            role: 'user',
-                            content: prompt
-                        }
-                    ],
-                    max_tokens: 1000,
-                    temperature: 0.1
-                })
-            });
-            
-            if (!response.ok) {
-                throw new Error(`Cerebras API error: ${response.status}`);
-            }
-            
-            const data = await response.json();
-            return data.choices[0].message.content;
-        } catch (error) {
-            console.error('Cerebras API error:', error);
-            throw error;
-        }
-    }
-    
-    parseCerebrasResponse(response) {
-        try {
-            const parsed = JSON.parse(response);
-            
-            if (!parsed.action) {
-                return {
-                    success: false,
-                    message: parsed.reasoning || 'Could not determine action from instruction'
-                };
-            }
-            
-            return {
-                success: true,
-                action: parsed.action,
-                confidence: parsed.confidence || 0.5,
-                reasoning: parsed.reasoning
-            };
-        } catch (error) {
-            console.error('Error parsing Cerebras response:', error);
             return {
                 success: false,
-                message: 'Error parsing AI response'
+                message: 'Unable to process instruction. Please try a different wording.'
             };
         }
     }
@@ -394,12 +260,6 @@ If the instruction is unclear or no suitable action can be determined, return:
             }
             
             const summary = this.websiteData.summary;
-            
-            // Use Amazon Polly for text-to-speech if available
-            if (this.apiKeys.polly) {
-                await this.speakWithPolly(summary);
-            }
-            
             return { success: true, summary: summary };
         } catch (error) {
             console.error('Error getting summary:', error);
@@ -414,12 +274,6 @@ If the instruction is unclear or no suitable action can be determined, return:
             }
             
             const suggestions = this.websiteData.suggestions;
-            
-            // Use Amazon Polly for text-to-speech if available
-            if (this.apiKeys.polly) {
-                await this.speakWithPolly(suggestions);
-            }
-            
             return { success: true, suggestions: suggestions };
         } catch (error) {
             console.error('Error getting suggestions:', error);
@@ -427,21 +281,6 @@ If the instruction is unclear or no suitable action can be determined, return:
         }
     }
     
-    async speakWithPolly(text) {
-        try {
-            // This would integrate with Amazon Polly
-            // For now, we'll use the browser's built-in speech synthesis
-            // In a real implementation, you would call the Polly API here
-            console.log('Polly TTS:', text);
-        } catch (error) {
-            console.error('Error with Polly TTS:', error);
-        }
-    }
-    
-    async setApiKeys(keys) {
-        this.apiKeys = { ...this.apiKeys, ...keys };
-        await this.saveApiKeys();
-    }
 }
 
 // Initialize background script
