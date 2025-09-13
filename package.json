@@ -1,0 +1,49 @@
+{
+  "name": "blind-navigator-ai",
+  "version": "1.0.0",
+  "description": "An agentic AI Chrome extension that helps blind users navigate any website through voice commands and audio feedback",
+  "main": "background.js",
+  "scripts": {
+    "build": "echo 'No build process needed for Chrome extension'",
+    "test": "echo 'Run tests in Chrome extension environment'",
+    "lint": "echo 'Linting Chrome extension files'",
+    "package": "zip -r blind-navigator-ai.zip . -x '*.git*' 'node_modules/*' '*.md' 'package*.json'"
+  },
+  "keywords": [
+    "accessibility",
+    "blind",
+    "voice",
+    "ai",
+    "chrome-extension",
+    "navigation",
+    "assistive-technology"
+  ],
+  "author": "Blind Navigator AI Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/blind-navigator-ai"
+  },
+  "bugs": {
+    "url": "https://github.com/your-username/blind-navigator-ai/issues"
+  },
+  "homepage": "https://github.com/your-username/blind-navigator-ai#readme",
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "devDependencies": {},
+  "dependencies": {},
+  "chromeExtension": {
+    "manifestVersion": 3,
+    "permissions": [
+      "activeTab",
+      "storage",
+      "scripting",
+      "tabs"
+    ],
+    "hostPermissions": [
+      "https://*/*",
+      "http://*/*"
+    ]
+  }
+}

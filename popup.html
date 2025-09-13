@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blind Navigator AI</title>
+    <style>
+        body {
+            width: 400px;
+            min-height: 300px;
+            margin: 0;
+            padding: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 10px;
+            position: relative;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .settings-btn {
+            position: absolute;
+            right: 0;
+            top: 0;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 4px;
+            transition: background 0.3s;
+        }
+        
+        .settings-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .status {
+            padding: 10px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            text-align: center;
+            font-size: 14px;
+        }
+        
+        .input-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .voice-input {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        #voiceInput {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+        }
+        
+        .voice-btn {
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            background: #4CAF50;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+        
+        .voice-btn:hover {
+            background: #45a049;
+        }
+        
+        .voice-btn.recording {
+            background: #f44336;
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .option-btn {
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            cursor: pointer;
+            font-size: 13px;
+            transition: background 0.3s;
+        }
+        
+        .option-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .loading {
+            text-align: center;
+            font-style: italic;
+        }
+        
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎧 Blind Navigator AI</h1>
+            <button id="settingsBtn" class="settings-btn" title="Settings">⚙️</button>
+        </div>
+        
+        <div id="status" class="status">
+            Ready to help you navigate
+        </div>
+        
+        <div class="input-container">
+            <div class="voice-input">
+                <input type="text" id="voiceInput" placeholder="Speak or type your instruction..." />
+                <button id="voiceBtn" class="voice-btn">🎤</button>
+            </div>
+        </div>
+        
+        <div id="options" class="options hidden">
+            <button id="summaryBtn" class="option-btn">📄 Get website summary</button>
+            <button id="suggestionsBtn" class="option-btn">💡 Get action suggestions</button>
+            <button id="directBtn" class="option-btn">⚡ Give direct instruction</button>
+        </div>
+        
+        <div id="loading" class="loading hidden">
+            Processing your request...
+        </div>
+    </div>
+    
+    <script src="popup.js"></script>
+</body>
+</html>

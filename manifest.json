@@ -1,0 +1,46 @@
+{
+  "manifest_version": 3,
+  "name": "Blind Navigator AI",
+  "version": "1.0.0",
+  "description": "An agentic AI Chrome extension that helps blind users navigate any website through voice commands",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "scripting",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://*/*",
+    "http://*/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_end"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Blind Navigator AI"
+  },
+  "options_page": "settings.html",
+  "commands": {
+    "toggle-extension": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+V",
+        "mac": "Command+Shift+V"
+      },
+      "description": "Toggle Blind Navigator AI"
+    }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["audio/*"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
