@@ -5,285 +5,260 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Blind Navigator AI - Settings</title>
     <style>
-        body {
-            width: 500px;
-            min-height: 400px;
+        * {
             margin: 0;
-            padding: 20px;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
             color: white;
+            min-height: 100vh;
+            padding: 20px;
         }
         
         .container {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
         
         .header {
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 30px;
         }
         
         .header h1 {
-            margin: 0;
-            font-size: 20px;
-            font-weight: 600;
+            font-size: 28px;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #4CAF50, #8BC34A);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .header p {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 16px;
         }
         
         .section {
             background: rgba(255, 255, 255, 0.1);
-            padding: 15px;
-            border-radius: 8px;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
         
-        .section h3 {
-            margin: 0 0 10px 0;
-            font-size: 16px;
-            font-weight: 500;
+        .section h2 {
+            margin-bottom: 20px;
+            color: #4CAF50;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
         
         .form-group {
-            margin-bottom: 15px;
+            margin-bottom: 20px;
         }
         
         .form-group label {
             display: block;
-            margin-bottom: 5px;
-            font-size: 14px;
+            margin-bottom: 8px;
             font-weight: 500;
+            color: rgba(255, 255, 255, 0.9);
         }
         
-        .form-group input {
-            width: 100%;
-            padding: 10px;
-            border: none;
-            border-radius: 6px;
-            font-size: 14px;
-            background: rgba(255, 255, 255, 0.9);
-            color: #333;
-            box-sizing: border-box;
-        }
-        
-        .form-group input:focus {
-            outline: 2px solid #4CAF50;
-            outline-offset: 2px;
-        }
-        
-        .form-group .help-text {
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.8);
-            margin-top: 5px;
-        }
-        
-        .button-group {
+        .speed-control {
             display: flex;
-            gap: 10px;
-            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-top: 10px;
+        }
+        
+        .speed-slider {
+            flex: 1;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.2);
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        .speed-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #4CAF50;
+            cursor: pointer;
+            border: 2px solid white;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        }
+        
+        .speed-slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #4CAF50;
+            cursor: pointer;
+            border: 2px solid white;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        }
+        
+        .speed-value {
+            min-width: 50px;
+            text-align: center;
+            font-weight: bold;
+            color: #4CAF50;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
         
         .btn {
-            padding: 10px 20px;
+            padding: 12px 24px;
             border: none;
-            border-radius: 6px;
-            font-size: 14px;
+            border-radius: 8px;
+            font-size: 16px;
             font-weight: 500;
             cursor: pointer;
-            transition: background 0.3s;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
         }
         
         .btn-primary {
-            background: #4CAF50;
+            background: linear-gradient(45deg, #4CAF50, #45a049);
             color: white;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
         }
         
         .btn-primary:hover {
-            background: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
         }
         
         .btn-secondary {
-            background: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.1);
             color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
         }
         
         .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.3);
-        }
-        
-        .status {
-            padding: 10px;
-            border-radius: 6px;
-            text-align: center;
-            font-size: 14px;
-            margin-top: 10px;
-        }
-        
-        .status.success {
-            background: rgba(76, 175, 80, 0.3);
-            border: 1px solid #4CAF50;
-        }
-        
-        .status.error {
-            background: rgba(244, 67, 54, 0.3);
-            border: 1px solid #f44336;
-        }
-        
-        .status.info {
-            background: rgba(33, 150, 243, 0.3);
-            border: 1px solid #2196F3;
-        }
-        
-        .hidden {
-            display: none;
-        }
-        
-        .api-status {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-top: 10px;
-        }
-        
-        .status-indicator {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: #f44336;
-        }
-        
-        .status-indicator.connected {
-            background: #4CAF50;
+            background: rgba(255, 255, 255, 0.2);
         }
         
         .test-section {
+            text-align: center;
             margin-top: 20px;
         }
         
-        .test-btn {
-            width: 100%;
-            padding: 10px;
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        
-        .test-btn:hover {
-            background: rgba(255, 255, 255, 0.3);
-        }
-        
-        .browser-features {
-            background: rgba(76, 175, 80, 0.2);
-            border: 1px solid #4CAF50;
+        .status {
+            margin-top: 20px;
             padding: 15px;
             border-radius: 8px;
-            margin-bottom: 20px;
+            font-weight: 500;
+            text-align: center;
+            transition: all 0.3s ease;
         }
         
-        .browser-features h4 {
-            margin: 0 0 10px 0;
+        .status.hidden {
+            display: none;
+        }
+        
+        .status.success {
+            background: rgba(76, 175, 80, 0.2);
+            border: 1px solid #4CAF50;
             color: #4CAF50;
         }
         
-        .browser-features p {
-            margin: 0;
-            font-size: 14px;
-            color: rgba(255, 255, 255, 0.9);
+        .status.error {
+            background: rgba(244, 67, 54, 0.2);
+            border: 1px solid #f44336;
+            color: #f44336;
         }
         
-        .usage-info {
+        .status.info {
             background: rgba(33, 150, 243, 0.2);
             border: 1px solid #2196F3;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
-        
-        .usage-info h4 {
-            margin: 0 0 10px 0;
             color: #2196F3;
         }
         
-        .usage-info p {
-            margin: 0 0 10px 0;
-            font-size: 14px;
-            color: rgba(255, 255, 255, 0.9);
+        .speed-presets {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
         }
         
-        .usage-info ul {
-            margin: 0;
-            padding-left: 20px;
+        .preset-btn {
+            padding: 8px 16px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border-radius: 20px;
+            cursor: pointer;
             font-size: 14px;
-            color: rgba(255, 255, 255, 0.9);
+            transition: all 0.3s ease;
+        }
+        
+        .preset-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .preset-btn.active {
+            background: #4CAF50;
+            border-color: #4CAF50;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>⚙️ Blind Navigator AI Settings</h1>
-        </div>
-        
-        <div class="browser-features">
-            <h4>✅ Built-in Features</h4>
-            <p>This extension uses Chrome's built-in text-to-speech features, which are free and work immediately without any setup required.</p>
-        </div>
-        
-        <!-- <div class="usage-info">
-            <h4>📝 How to Use Wispr</h4>
-            <p>Since Wispr doesn't require an API key, you can use it directly:</p>
-            <ul>
-                <li>Go to <a href="https://wispr.ai" target="_blank" style="color: #4CAF50;">wispr.ai</a> in your browser</li>
-                <li>Record your voice or upload an audio file</li>
-                <li>Copy the transcribed text</li>
-                <li>Paste it into the text input in the extension popup</li>
-                <li>Press Enter or click Submit to process</li>
-            </ul> -->
+            <h1>🎧 Blind Navigator AI</h1>
+            <p>Configure your text-to-speech settings</p>
         </div>
         
         <div class="section">
-            <h3>API Configuration (Optional)</h3>
-            <p style="margin: 0 0 15px 0; font-size: 14px; color: rgba(255, 255, 255, 0.8);">
-                Configure API keys for enhanced functionality. All fields are optional - the extension works perfectly with built-in browser features.
-            </p>
-            
+            <h2>🔊 Speech Settings</h2>
             <div class="form-group">
-                <label for="cerebrasKey">Cerebras API Key</label>
-                <input type="password" id="cerebrasKey" placeholder="Enter your Cerebras API key">
-                <div class="help-text">For intelligent instruction interpretation. Get your key at <a href="https://cerebras.ai" target="_blank" style="color: #4CAF50;">cerebras.ai</a></div>
+                <label for="speedSlider">Speech Speed</label>
+                <div class="speed-control">
+                    <span>Slow</span>
+                    <input type="range" id="speedSlider" class="speed-slider" min="0.1" max="3" step="0.1" value="1">
+                    <span>Fast</span>
+                    <div id="speedValue" class="speed-value">1.0x</div>
+                </div>
+                
+                <div class="speed-presets">
+                    <button class="preset-btn" data-speed="0.5">Very Slow</button>
+                    <button class="preset-btn" data-speed="0.7">Slow</button>
+                    <button class="preset-btn" data-speed="1.0">Normal</button>
+                    <button class="preset-btn" data-speed="1.3">Fast</button>
+                    <button class="preset-btn" data-speed="1.8">Very Fast</button>
+                </div>
             </div>
         </div>
         
         <div class="section">
-            <h3>API Status</h3>
-            <div class="api-status">
-                <div class="status-indicator" id="cerebrasStatus"></div>
-                <span>Cerebras API</span>
+            <div style="display: flex; gap: 15px; justify-content: center;">
+                <button id="saveBtn" class="btn btn-primary">Save Settings</button>
+                <button id="testBtn" class="btn btn-secondary">Test Speech</button>
             </div>
-            <div class="api-status">
-                <div class="status-indicator connected"></div>
-                <span>Browser TTS (Always Available)</span>
-            </div>
-            <div class="api-status">
-                <div class="status-indicator connected"></div>
-                <span>Wispr (External - No API Key Needed)</span>
-            </div>
-        </div>
-        
-        <div class="button-group">
-            <button id="saveBtn" class="btn btn-primary">Save Settings</button>
-            <button id="testBtn" class="btn btn-secondary">Test APIs</button>
         </div>
         
         <div id="status" class="status hidden"></div>
-        
-        <div class="test-section">
-            <h3>Test Audio Features</h3>
-            <button id="testSpeechBtn" class="test-btn">Test Speech Output</button>
-        </div>
     </div>
     
     <script src="settings.js"></script>

@@ -1,143 +1,109 @@
-class BlindNavigatorSettings {
+class SettingsManager {
     constructor() {
-        this.apiKeys = {
-            cerebras: ''
-        };
-        
-        this.initializeElements();
-        this.setupEventListeners();
-        this.loadSettings();
-    }
-    
-    initializeElements() {
-        this.cerebrasKeyInput = document.getElementById('cerebrasKey');
-        
+        this.speedSlider = document.getElementById('speedSlider');
+        this.speedValue = document.getElementById('speedValue');
         this.saveBtn = document.getElementById('saveBtn');
         this.testBtn = document.getElementById('testBtn');
-        this.testSpeechBtn = document.getElementById('testSpeechBtn');
-        
         this.statusEl = document.getElementById('status');
-        this.cerebrasStatus = document.getElementById('cerebrasStatus');
+        this.presetBtns = document.querySelectorAll('.preset-btn');
+        
+        this.currentSpeed = 1.0;
+        this.initializeSettings();
+        this.setupEventListeners();
+    }
+    
+    async initializeSettings() {
+        // Load saved speed setting
+        const result = await chrome.storage.sync.get(['ttsSpeed']);
+        if (result.ttsSpeed !== undefined) {
+            this.currentSpeed = result.ttsSpeed;
+            this.updateSpeedDisplay();
+            this.updatePresetButtons();
+        }
     }
     
     setupEventListeners() {
-        this.saveBtn.addEventListener('click', () => this.saveSettings());
-        this.testBtn.addEventListener('click', () => this.testAPIs());
-        this.testSpeechBtn.addEventListener('click', () => this.testSpeechOutput());
-        
-        // Auto-save on input change
-        [this.cerebrasKeyInput].forEach(input => {
-            input.addEventListener('input', () => this.autoSave());
+        // Speed slider
+        this.speedSlider.addEventListener('input', (e) => {
+            this.currentSpeed = parseFloat(e.target.value);
+            this.updateSpeedDisplay();
+            this.updatePresetButtons();
+            this.autoSave();
         });
+        
+        // Preset buttons
+        this.presetBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const speed = parseFloat(e.target.dataset.speed);
+                this.currentSpeed = speed;
+                this.speedSlider.value = speed;
+                this.updateSpeedDisplay();
+                this.updatePresetButtons();
+                this.autoSave();
+            });
+        });
+        
+        // Save button
+        this.saveBtn.addEventListener('click', () => this.saveSettings());
+        
+        // Test button
+        this.testBtn.addEventListener('click', () => this.testSpeech());
     }
     
-    async loadSettings() {
-        try {
-            const result = await chrome.storage.sync.get([
-                'cerebrasKey'
-            ]);
-            
-            this.cerebrasKeyInput.value = result.cerebrasKey || '';
-            
-            this.updateAPIStatus();
-        } catch (error) {
-            console.error('Error loading settings:', error);
-            this.showStatus('Error loading settings', 'error');
-        }
+    updateSpeedDisplay() {
+        this.speedValue.textContent = `${this.currentSpeed.toFixed(1)}x`;
+        this.speedSlider.value = this.currentSpeed;
+    }
+    
+    updatePresetButtons() {
+        this.presetBtns.forEach(btn => {
+            btn.classList.remove('active');
+            const btnSpeed = parseFloat(btn.dataset.speed);
+            if (Math.abs(btnSpeed - this.currentSpeed) < 0.05) {
+                btn.classList.add('active');
+            }
+        });
     }
     
     async saveSettings() {
         try {
-            this.apiKeys = {
-                cerebras: this.cerebrasKeyInput.value.trim()
-            };
-            
             await chrome.storage.sync.set({
-                cerebrasKey: this.apiKeys.cerebras
+                ttsSpeed: this.currentSpeed
             });
-            
-            // Send updated keys to background script
-            await chrome.runtime.sendMessage({
-                action: 'setApiKeys',
-                keys: this.apiKeys
-            });
-            
             this.showStatus('Settings saved successfully!', 'success');
-            this.updateAPIStatus();
         } catch (error) {
+            this.showStatus('Failed to save settings', 'error');
             console.error('Error saving settings:', error);
-            this.showStatus('Error saving settings', 'error');
         }
     }
     
     async autoSave() {
-        // Debounce auto-save
+        // Auto-save after a short delay to avoid too many saves
         clearTimeout(this.autoSaveTimeout);
         this.autoSaveTimeout = setTimeout(() => {
             this.saveSettings();
-        }, 1000);
+        }, 500);
     }
     
-    updateAPIStatus() {
-        this.cerebrasStatus.className = `status-indicator ${this.apiKeys.cerebras ? 'connected' : ''}`;
-    }
-    
-    async testAPIs() {
-        this.showStatus('Testing APIs...', 'info');
-        
-        const results = {
-            cerebras: false
-        };
-        
-        // Test Cerebras API
-        if (this.apiKeys.cerebras) {
-            try {
-                const response = await fetch('https://api.cerebras.ai/v1/chat/completions', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${this.apiKeys.cerebras}`
-                    },
-                    body: JSON.stringify({
-                        model: 'cerebras-llama-2-7b-chat',
-                        messages: [{ role: 'user', content: 'Test' }],
-                        max_tokens: 10
-                    })
-                });
-                results.cerebras = response.ok;
-            } catch (error) {
-                console.error('Cerebras API test failed:', error);
-            }
-        }
-        
-        // Update status indicators
-        this.cerebrasStatus.className = `status-indicator ${results.cerebras ? 'connected' : ''}`;
-        
-        const successCount = Object.values(results).filter(Boolean).length;
-        const totalCount = Object.keys(results).length;
-        
-        this.showStatus(`API test completed. ${successCount}/${totalCount} APIs working. Browser TTS and Wispr are always available.`, 'info');
-    }
-    
-    async testSpeechOutput() {
+    async testSpeech() {
         if (!('speechSynthesis' in window)) {
-            this.showStatus('Speech output not supported in this browser', 'error');
+            this.showStatus('Speech synthesis not supported in this browser', 'error');
             return;
         }
         
         this.showStatus('Testing speech output...', 'info');
         
-        const utterance = new SpeechSynthesisUtterance('Blind Navigator AI speech output test successful!');
-        utterance.rate = 0.9;
+        const utterance = new SpeechSynthesisUtterance('This is a test of your current speech speed settings. The Blind Navigator AI is ready to help you navigate the web.');
+        utterance.rate = this.currentSpeed;
         utterance.pitch = 1;
         utterance.volume = 1;
         
         utterance.onend = () => {
-            this.showStatus('Speech output test successful!', 'success');
+            this.showStatus('Speech test completed successfully!', 'success');
         };
         
         utterance.onerror = (event) => {
-            this.showStatus(`Speech output test failed: ${event.error}`, 'error');
+            this.showStatus(`Speech test failed: ${event.error}`, 'error');
         };
         
         speechSynthesis.speak(utterance);
@@ -148,14 +114,16 @@ class BlindNavigatorSettings {
         this.statusEl.className = `status ${type}`;
         this.statusEl.classList.remove('hidden');
         
-        // Auto-hide after 5 seconds
-        setTimeout(() => {
-            this.statusEl.classList.add('hidden');
-        }, 5000);
+        // Auto-hide success and info messages after 3 seconds
+        if (type === 'success' || type === 'info') {
+            setTimeout(() => {
+                this.statusEl.classList.add('hidden');
+            }, 3000);
+        }
     }
 }
 
-// Initialize settings page when DOM is loaded
+// Initialize settings when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    new BlindNavigatorSettings();
+    new SettingsManager();
 });

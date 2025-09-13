@@ -24,7 +24,8 @@ class BlindNavigatorPopup {
         // Text input
         this.submitBtn.addEventListener('click', () => this.submitTextInput());
         this.textInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter' && e.ctrlKey) {
+            if (e.key === 'Enter') {
+                e.preventDefault(); // Prevent default behavior (new line in textarea)
                 this.submitTextInput();
             }
         });
@@ -164,8 +165,12 @@ class BlindNavigatorPopup {
     
     async speak(text) {
         if ('speechSynthesis' in window) {
+            // Get the saved TTS speed setting
+            const result = await chrome.storage.sync.get(['ttsSpeed']);
+            const speed = result.ttsSpeed || 1.0;
+            
             const utterance = new SpeechSynthesisUtterance(text);
-            utterance.rate = 0.9;
+            utterance.rate = speed;
             utterance.pitch = 1;
             utterance.volume = 1;
             speechSynthesis.speak(utterance);
