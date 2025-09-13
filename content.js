@@ -42,6 +42,7 @@ class BlindNavigatorContent {
     
     async analyzeWebsite() {
         try {
+            console.log('Starting website analysis...');
             this.websiteData = {
                 title: document.title,
                 url: window.location.href,
@@ -51,11 +52,18 @@ class BlindNavigatorContent {
                 timestamp: Date.now()
             };
             
+            console.log('Website analysis complete:', {
+                title: this.websiteData.title,
+                url: this.websiteData.url,
+                elementsCount: this.websiteData.interactableElements.length
+            });
+            
             // Send data to background script
             chrome.runtime.sendMessage({
                 action: 'websiteAnalyzed',
                 data: this.websiteData
             });
+            console.log('Website data sent to background script');
         } catch (error) {
             console.error('Error analyzing website:', error);
         }

@@ -2,6 +2,7 @@ class SettingsManager {
     constructor() {
         this.speedSlider = document.getElementById('speedSlider');
         this.speedValue = document.getElementById('speedValue');
+        this.cerebrasKeyInput = document.getElementById('cerebrasKey');
         this.saveBtn = document.getElementById('saveBtn');
         this.testBtn = document.getElementById('testBtn');
         this.statusEl = document.getElementById('status');
@@ -13,12 +14,15 @@ class SettingsManager {
     }
     
     async initializeSettings() {
-        // Load saved speed setting
-        const result = await chrome.storage.sync.get(['ttsSpeed']);
+        // Load saved settings
+        const result = await chrome.storage.sync.get(['ttsSpeed', 'cerebrasKey']);
         if (result.ttsSpeed !== undefined) {
             this.currentSpeed = result.ttsSpeed;
             this.updateSpeedDisplay();
             this.updatePresetButtons();
+        }
+        if (result.cerebrasKey) {
+            this.cerebrasKeyInput.value = result.cerebrasKey;
         }
     }
     
@@ -47,7 +51,7 @@ class SettingsManager {
         this.saveBtn.addEventListener('click', () => this.saveSettings());
         
         // Test button
-        this.testBtn.addEventListener('click', () => this.testSpeech());
+        this.testBtn.addEventListener('click', () => this.testAPI());
     }
     
     updateSpeedDisplay() {
@@ -68,8 +72,18 @@ class SettingsManager {
     async saveSettings() {
         try {
             await chrome.storage.sync.set({
-                ttsSpeed: this.currentSpeed
+                ttsSpeed: this.currentSpeed,
+                cerebrasKey: this.cerebrasKeyInput.value.trim()
             });
+            
+            // Send updated keys to background script
+            await chrome.runtime.sendMessage({
+                action: 'setApiKeys',
+                keys: {
+                    cerebras: this.cerebrasKeyInput.value.trim()
+                }
+            });
+            
             this.showStatus('Settings saved successfully!', 'success');
         } catch (error) {
             this.showStatus('Failed to save settings', 'error');
@@ -83,6 +97,45 @@ class SettingsManager {
         this.autoSaveTimeout = setTimeout(() => {
             this.saveSettings();
         }, 500);
+    }
+    
+    async testAPI() {
+        const apiKey = this.cerebrasKeyInput.value.trim();
+        if (!apiKey) {
+            this.showStatus('Please enter your Cerebras API key first', 'error');
+            return;
+        }
+        
+        this.showStatus('Testing Cerebras API...', 'info');
+        
+        try {
+            const response = await fetch('https://api.cerebras.ai/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`
+                },
+                body: JSON.stringify({
+                    model: 'llama-4-scout-17b-16e-instruct',
+                    messages: [
+                        {
+                            role: 'user',
+                            content: 'Test message - please respond with "API test successful"'
+                        }
+                    ],
+                    max_tokens: 50
+                })
+            });
+            
+            if (response.ok) {
+                this.showStatus('Cerebras API test successful!', 'success');
+            } else {
+                this.showStatus(`API test failed: ${response.status}`, 'error');
+            }
+        } catch (error) {
+            this.showStatus(`API test failed: ${error.message}`, 'error');
+            console.error('API test error:', error);
+        }
     }
     
     async testSpeech() {

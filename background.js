@@ -1,12 +1,16 @@
 class BlindNavigatorBackground {
     constructor() {
         this.websiteData = null;
+        this.apiKeys = {
+            cerebras: null
+        };
         
         this.initialize();
     }
     
     initialize() {
         this.setupMessageListener();
+        this.loadApiKeys();
         this.setupKeyboardShortcuts();
     }
     
@@ -24,6 +28,24 @@ class BlindNavigatorBackground {
         });
     }
     
+    async loadApiKeys() {
+        try {
+            const result = await chrome.storage.sync.get(['cerebrasKey']);
+            this.apiKeys.cerebras = result.cerebrasKey;
+        } catch (error) {
+            console.error('Error loading API keys:', error);
+        }
+    }
+    
+    async saveApiKeys() {
+        try {
+            await chrome.storage.sync.set({
+                cerebrasKey: this.apiKeys.cerebras
+            });
+        } catch (error) {
+            console.error('Error saving API keys:', error);
+        }
+    }
     
     async toggleExtension() {
         try {
@@ -55,6 +77,7 @@ class BlindNavigatorBackground {
                     break;
                     
                 case 'websiteAnalyzed':
+                    console.log('Received website data from content script:', message.data);
                     this.websiteData = message.data;
                     sendResponse({ success: true });
                     break;
@@ -75,12 +98,35 @@ class BlindNavigatorBackground {
     
     async processInstruction(instruction) {
         try {
+            console.log('Processing instruction:', instruction);
+            console.log('Website data available:', !!this.websiteData);
+            
             if (!this.websiteData) {
-                return { success: false, message: 'Website data not available. Please refresh the page.' };
+                console.log('No website data available, requesting from content script...');
+                // Try to get website data from content script
+                const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+                if (tab) {
+                    try {
+                        const response = await chrome.tabs.sendMessage(tab.id, {
+                            action: 'getWebsiteData'
+                        });
+                        if (response && response.success && response.data) {
+                            this.websiteData = response.data;
+                            console.log('Website data retrieved from content script:', this.websiteData);
+                        }
+                    } catch (error) {
+                        console.error('Error getting website data from content script:', error);
+                    }
+                }
+                
+                if (!this.websiteData) {
+                    return { success: false, message: 'Website data not available. Please refresh the page and try again.' };
+                }
             }
             
-            // Use Cerebras API to interpret the instruction
-            const interpretation = await this.interpretInstruction(instruction);
+            // Call Cerebras API to interpret the instruction
+            const interpretation = await this.callCerebrasAPI(instruction);
+            console.log('Interpretation result:', interpretation);
             
             if (!interpretation.success) {
                 return interpretation;
@@ -88,6 +134,7 @@ class BlindNavigatorBackground {
             
             // Execute the interpreted action
             const executionResult = await this.executeAction(interpretation.action);
+            console.log('Execution result:', executionResult);
             
             return {
                 success: executionResult.success,
@@ -96,6 +143,131 @@ class BlindNavigatorBackground {
         } catch (error) {
             console.error('Error processing instruction:', error);
             return { success: false, message: 'Error processing instruction: ' + error.message };
+        }
+    }
+    
+    async callCerebrasAPI(instruction) {
+        try {
+            // Get API key from storage
+            const result = await chrome.storage.sync.get(['cerebrasKey']);
+            const apiKey = result.cerebrasKey;
+            
+            if (!apiKey) {
+                return {
+                    success: false,
+                    message: 'Cerebras API key not configured. Please set it in settings.'
+                };
+            }
+            
+            // Build the prompt with website context
+            const prompt = this.buildCerebrasPrompt(instruction);
+            
+            // Make API call to Cerebras
+            const response = await fetch('https://api.cerebras.ai/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`
+                },
+                body: JSON.stringify({
+                    model: 'llama-4-scout-17b-16e-instruct',
+                    messages: [
+                        {
+                            role: 'user',
+                            content: prompt
+                        }
+                    ],
+                    max_tokens: 1000,
+                    temperature: 0.1
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Cerebras API error: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            const aiResponse = data.choices[0].message.content;
+            
+            // Parse the AI response
+            return this.parseCerebrasResponse(aiResponse);
+            
+        } catch (error) {
+            console.error('Cerebras API error:', error);
+            return {
+                success: false,
+                message: 'Error calling Cerebras API: ' + error.message
+            };
+        }
+    }
+    
+    buildCerebrasPrompt(instruction) {
+        const context = {
+            website: {
+                title: this.websiteData.title,
+                url: this.websiteData.url,
+                elements: this.websiteData.interactableElements
+            },
+            instruction: instruction
+        };
+        
+        return `You are an AI assistant helping a blind user navigate a website. 
+
+Website Context:
+- Title: ${context.website.title}
+- URL: ${context.website.url}
+- Available elements: ${JSON.stringify(context.website.elements.slice(0, 10))}
+
+User Instruction: "${instruction}"
+
+Based on the user's instruction and the available website elements, determine what action to take. 
+
+Return a JSON response with this structure. Do not return any other reasoning, just a JSON object:
+{
+    "action": {
+        "type": "click|fill|navigate|scroll",
+        "selector": "CSS selector for the element",
+        "text": "Description of what will be clicked/filled",
+        "value": "Value to fill (for fill actions)",
+        "url": "URL to navigate to (for navigate actions)",
+        "direction": "up|down|top|bottom (for scroll actions)"
+    },
+    "confidence": 0.0-1.0,
+    "reasoning": "Brief explanation of why this action was chosen"
+}
+
+If the instruction is unclear or no suitable action can be determined, return (without any other reasoning either):
+{
+    "action": null,
+    "confidence": 0.0,
+    "reasoning": "Explanation of why no action could be determined"
+}`;
+    }
+    
+    parseCerebrasResponse(response) {
+        try {
+            console.log("response", response);
+            const parsed = JSON.parse(response);
+            
+            if (!parsed.action) {
+                return {
+                    success: false,
+                    message: parsed.reasoning || 'Could not determine action from instruction'
+                };
+            }
+            
+            return {
+                success: true,
+                action: parsed.action,
+                confidence: parsed.confidence || 0.5,
+                reasoning: parsed.reasoning
+            };
+        } catch (error) {
+            console.error('Error parsing Cerebras response:', error);
+            return {
+                success: false,
+                message: 'Error parsing AI response'
+            };
         }
     }
     
@@ -281,6 +453,10 @@ class BlindNavigatorBackground {
         }
     }
     
+    async setApiKeys(keys) {
+        this.apiKeys = { ...this.apiKeys, ...keys };
+        await this.saveApiKeys();
+    }
 }
 
 // Initialize background script
