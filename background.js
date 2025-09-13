@@ -2,9 +2,7 @@ class BlindNavigatorBackground {
     constructor() {
         this.websiteData = null;
         this.apiKeys = {
-            cerebras: null,
-            polly: null,
-            wispr: null
+            cerebras: null
         };
         
         this.initialize();
@@ -32,10 +30,8 @@ class BlindNavigatorBackground {
     
     async loadApiKeys() {
         try {
-            const result = await chrome.storage.sync.get(['cerebrasKey', 'pollyKey', 'wisprKey']);
+            const result = await chrome.storage.sync.get(['cerebrasKey']);
             this.apiKeys.cerebras = result.cerebrasKey;
-            this.apiKeys.polly = result.pollyKey;
-            this.apiKeys.wispr = result.wisprKey;
         } catch (error) {
             console.error('Error loading API keys:', error);
         }
@@ -44,9 +40,7 @@ class BlindNavigatorBackground {
     async saveApiKeys() {
         try {
             await chrome.storage.sync.set({
-                cerebrasKey: this.apiKeys.cerebras,
-                pollyKey: this.apiKeys.polly,
-                wisprKey: this.apiKeys.wispr
+                cerebrasKey: this.apiKeys.cerebras
             });
         } catch (error) {
             console.error('Error saving API keys:', error);
@@ -394,12 +388,6 @@ If the instruction is unclear or no suitable action can be determined, return:
             }
             
             const summary = this.websiteData.summary;
-            
-            // Use Amazon Polly for text-to-speech if available
-            if (this.apiKeys.polly) {
-                await this.speakWithPolly(summary);
-            }
-            
             return { success: true, summary: summary };
         } catch (error) {
             console.error('Error getting summary:', error);
@@ -414,27 +402,10 @@ If the instruction is unclear or no suitable action can be determined, return:
             }
             
             const suggestions = this.websiteData.suggestions;
-            
-            // Use Amazon Polly for text-to-speech if available
-            if (this.apiKeys.polly) {
-                await this.speakWithPolly(suggestions);
-            }
-            
             return { success: true, suggestions: suggestions };
         } catch (error) {
             console.error('Error getting suggestions:', error);
             return { success: false, message: 'Error generating suggestions' };
-        }
-    }
-    
-    async speakWithPolly(text) {
-        try {
-            // This would integrate with Amazon Polly
-            // For now, we'll use the browser's built-in speech synthesis
-            // In a real implementation, you would call the Polly API here
-            console.log('Polly TTS:', text);
-        } catch (error) {
-            console.error('Error with Polly TTS:', error);
         }
     }
     

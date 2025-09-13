@@ -3,8 +3,6 @@
 const CONFIG = {
     // API Endpoints
     CEREBRAS_API_URL: 'https://api.cerebras.ai/v1/chat/completions',
-    POLLY_API_URL: 'https://polly.us-east-1.amazonaws.com/v1/speech',
-    WISPR_API_URL: 'https://api.wispr.ai/v1/transcribe',
     
     // Default settings
     DEFAULT_SPEECH_RATE: 0.9,
@@ -46,8 +44,8 @@ const CONFIG = {
         NAVIGATION_STARTED: 'Navigation started successfully.'
     },
     
-    // Voice Commands
-    VOICE_COMMANDS: {
+    // Text Commands
+    TEXT_COMMANDS: {
         SUMMARY: ['summary', 'describe', 'tell me about', 'what is on this page'],
         SUGGESTIONS: ['suggestions', 'what can I do', 'options', 'actions'],
         CLICK: ['click', 'press', 'tap', 'select'],
@@ -70,16 +68,7 @@ const CONFIG = {
     // Cerebras Model Configuration
     CEREBRAS_MODEL: 'cerebras-llama-2-7b-chat',
     CEREBRAS_MAX_TOKENS: 1000,
-    CEREBRAS_TEMPERATURE: 0.1,
-    
-    // Polly Configuration
-    POLLY_VOICE: 'Joanna',
-    POLLY_ENGINE: 'neural',
-    POLLY_LANGUAGE: 'en-US',
-    
-    // Wispr Configuration
-    WISPR_LANGUAGE: 'en',
-    WISPR_MODEL: 'whisper-1'
+    CEREBRAS_TEMPERATURE: 0.1
 };
 
 // Export for use in other files

@@ -174,6 +174,51 @@
         .test-btn:hover {
             background: rgba(255, 255, 255, 0.3);
         }
+        
+        .browser-features {
+            background: rgba(76, 175, 80, 0.2);
+            border: 1px solid #4CAF50;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .browser-features h4 {
+            margin: 0 0 10px 0;
+            color: #4CAF50;
+        }
+        
+        .browser-features p {
+            margin: 0;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .usage-info {
+            background: rgba(33, 150, 243, 0.2);
+            border: 1px solid #2196F3;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .usage-info h4 {
+            margin: 0 0 10px 0;
+            color: #2196F3;
+        }
+        
+        .usage-info p {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .usage-info ul {
+            margin: 0;
+            padding-left: 20px;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.9);
+        }
     </style>
 </head>
 <body>
@@ -182,34 +227,33 @@
             <h1>⚙️ Blind Navigator AI Settings</h1>
         </div>
         
+        <div class="browser-features">
+            <h4>✅ Built-in Features</h4>
+            <p>This extension uses Chrome's built-in text-to-speech features, which are free and work immediately without any setup required.</p>
+        </div>
+        
+        <!-- <div class="usage-info">
+            <h4>📝 How to Use Wispr</h4>
+            <p>Since Wispr doesn't require an API key, you can use it directly:</p>
+            <ul>
+                <li>Go to <a href="https://wispr.ai" target="_blank" style="color: #4CAF50;">wispr.ai</a> in your browser</li>
+                <li>Record your voice or upload an audio file</li>
+                <li>Copy the transcribed text</li>
+                <li>Paste it into the text input in the extension popup</li>
+                <li>Press Enter or click Submit to process</li>
+            </ul> -->
+        </div>
+        
         <div class="section">
-            <h3>API Configuration</h3>
+            <h3>API Configuration (Optional)</h3>
             <p style="margin: 0 0 15px 0; font-size: 14px; color: rgba(255, 255, 255, 0.8);">
-                Configure API keys for enhanced functionality. All fields are optional - the extension will work with built-in browser features if no API keys are provided.
+                Configure API keys for enhanced functionality. All fields are optional - the extension works perfectly with built-in browser features.
             </p>
             
             <div class="form-group">
                 <label for="cerebrasKey">Cerebras API Key</label>
                 <input type="password" id="cerebrasKey" placeholder="Enter your Cerebras API key">
                 <div class="help-text">For intelligent instruction interpretation. Get your key at <a href="https://cerebras.ai" target="_blank" style="color: #4CAF50;">cerebras.ai</a></div>
-            </div>
-            
-            <div class="form-group">
-                <label for="pollyKey">Amazon Polly Access Key</label>
-                <input type="password" id="pollyKey" placeholder="Enter your AWS access key">
-                <div class="help-text">For high-quality text-to-speech. Configure in AWS IAM with Polly permissions.</div>
-            </div>
-            
-            <div class="form-group">
-                <label for="pollySecret">Amazon Polly Secret Key</label>
-                <input type="password" id="pollySecret" placeholder="Enter your AWS secret key">
-                <div class="help-text">Your AWS secret access key for Polly authentication.</div>
-            </div>
-            
-            <div class="form-group">
-                <label for="wisprKey">Wispr API Key</label>
-                <input type="password" id="wisprKey" placeholder="Enter your Wispr API key">
-                <div class="help-text">For enhanced speech-to-text. Get your key at <a href="https://wispr.ai" target="_blank" style="color: #4CAF50;">wispr.ai</a></div>
             </div>
         </div>
         
@@ -220,12 +264,12 @@
                 <span>Cerebras API</span>
             </div>
             <div class="api-status">
-                <div class="status-indicator" id="pollyStatus"></div>
-                <span>Amazon Polly</span>
+                <div class="status-indicator connected"></div>
+                <span>Browser TTS (Always Available)</span>
             </div>
             <div class="api-status">
-                <div class="status-indicator" id="wisprStatus"></div>
-                <span>Wispr API</span>
+                <div class="status-indicator connected"></div>
+                <span>Wispr (External - No API Key Needed)</span>
             </div>
         </div>
         
@@ -237,8 +281,7 @@
         <div id="status" class="status hidden"></div>
         
         <div class="test-section">
-            <h3>Test Voice Features</h3>
-            <button id="testVoiceBtn" class="test-btn">Test Voice Input</button>
+            <h3>Test Audio Features</h3>
             <button id="testSpeechBtn" class="test-btn">Test Speech Output</button>
         </div>
     </div>
