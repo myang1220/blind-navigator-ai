@@ -203,7 +203,7 @@ IMPORTANT: For CSS selectors, use simple and valid selectors. Avoid complex Tail
 - Tag selectors like "button" or "a"
 - Simple attribute selectors like "[href='/login']"
 
-Return a JSON response with this structure. DO NOT RETURN ANY OUSTIDE REASONING UNDER ANY CIRCUMSTANCES, just return a JSON object:
+Return a JSON response with this structure. DO NOT RETURN ANY ADDITIONAL TEXT, just return a JSON object:
 {
     "action": {
         "type": "click|fill|navigate|scroll",
