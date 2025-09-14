@@ -11,22 +11,11 @@ class BlindNavigatorContent {
     initialize() {
         this.setupMessageListener();
         this.analyzeWebsite();
-        this.setupKeyboardShortcuts();
     }
     
     setupMessageListener() {
         chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-            this.handleMessage(message, sender, sendResponse);
-        });
-    }
-    
-    setupKeyboardShortcuts() {
-        document.addEventListener('keydown', (e) => {
-            // Ctrl+Shift+V or Cmd+Shift+V to toggle extension
-            if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'V') {
-                e.preventDefault();
-                this.toggleExtension();
-            }
+            return this.handleMessage(message, sender, sendResponse);
         });
     }
     
@@ -42,7 +31,6 @@ class BlindNavigatorContent {
     
     async analyzeWebsite() {
         try {
-            console.log('Starting website analysis...');
             this.websiteData = {
                 title: document.title,
                 url: window.location.href,
@@ -52,18 +40,11 @@ class BlindNavigatorContent {
                 timestamp: Date.now()
             };
             
-            console.log('Website analysis complete:', {
-                title: this.websiteData.title,
-                url: this.websiteData.url,
-                elementsCount: this.websiteData.interactableElements.length
-            });
-            
             // Send data to background script
             chrome.runtime.sendMessage({
                 action: 'websiteAnalyzed',
                 data: this.websiteData
             });
-            console.log('Website data sent to background script');
         } catch (error) {
             console.error('Error analyzing website:', error);
         }
@@ -280,6 +261,7 @@ class BlindNavigatorContent {
     
     findInteractableElements() {
         const elements = [];
+        let elementCounter = 0;
         
         // Find clickable elements
         const clickableSelectors = [
@@ -297,18 +279,18 @@ class BlindNavigatorContent {
             found.forEach((element, index) => {
                 const text = this.getElementText(element);
                 if (text) {
-                    // Generate ID if element doesn't have one
-                    if (!element.id) {
-                        element.id = `blind-nav-clickable-${elements.length}`;
-                    }
+                    const elementId = elementCounter.toString();
+                    element.setAttribute('data-blind-nav-id', elementId);
                     
                     elements.push({
                         type: 'clickable',
                         text: text,
-                        selector: this.generateSelector(element),
+                        selector: `[data-blind-nav-id="${elementId}"]`,
                         element: element,
-                        id: element.id
+                        id: elementId
                     });
+                    
+                    elementCounter++;
                 }
             });
         });
@@ -327,19 +309,19 @@ class BlindNavigatorContent {
                 const placeholder = element.placeholder || '';
                 const name = element.name || element.id || '';
                 
-                // Generate ID if element doesn't have one
-                if (!element.id) {
-                    element.id = `blind-nav-input-${elements.length}`;
-                }
+                const elementId = elementCounter.toString();
+                element.setAttribute('data-blind-nav-id', elementId);
                 
                 elements.push({
                     type: 'input',
                     text: text || placeholder || name || 'Input field',
-                    selector: this.generateSelector(element),
+                    selector: `[data-blind-nav-id="${elementId}"]`,
                     element: element,
                     inputType: element.type || element.tagName.toLowerCase(),
-                    id: element.id
+                    id: elementId
                 });
+                
+                elementCounter++;
             });
         });
         
@@ -378,42 +360,6 @@ class BlindNavigatorContent {
         return suggestions.join('. ') + '.';
     }
     
-    generateSelector(element) {
-        // Generate a simple selector for the element
-        if (element.id) {
-            return `#${element.id}`;
-        }
-        
-        if (element.className) {
-            const classes = element.className.split(' ').filter(c => c).join('.');
-            return `.${classes}`;
-        }
-        
-        return element.tagName.toLowerCase();
-    }
-    
-    highlightInteractableElements() {
-        this.removeHighlights();
-        
-        const elements = this.findInteractableElements();
-        elements.forEach((item, index) => {
-            if (item.element) {
-                item.element.style.outline = '2px solid #4CAF50';
-                item.element.style.outlineOffset = '2px';
-                item.element.setAttribute('data-blind-nav-highlight', index);
-            }
-        });
-    }
-    
-    removeHighlights() {
-        const highlighted = document.querySelectorAll('[data-blind-nav-highlight]');
-        highlighted.forEach(element => {
-            element.style.outline = '';
-            element.style.outlineOffset = '';
-            element.removeAttribute('data-blind-nav-highlight');
-        });
-    }
-    
     async executeAction(action) {
         try {
             switch (action.type) {
@@ -435,16 +381,12 @@ class BlindNavigatorContent {
     }
     
     async performClick(action) {
-        let element = null;
+        console.log('performClick action object:', action);
+        console.log('action.selector:', action.selector);
         
-        // Use ID to find element
-        if (action.id) {
-            element = document.getElementById(action.id);
-            console.log('Looking for element with ID:', action.id);
-        }
-        
+        const element = document.querySelector(action.selector);
         if (!element) {
-            return { success: false, message: 'Element not found with ID: ' + action.id };
+            return { success: false, message: 'Element not found with selector: ' + action.selector };
         }
         
         // Scroll element into view
@@ -463,9 +405,9 @@ class BlindNavigatorContent {
     }
     
     async performFill(action) {
-        const element = document.getElementById(action.id);
+        const element = document.querySelector(action.selector);
         if (!element) {
-            return { success: false, message: 'Input element not found with ID: ' + action.id };
+            return { success: false, message: 'Input element not found with selector: ' + action.selector };
         }
         
         // Focus the element
@@ -529,76 +471,6 @@ class BlindNavigatorContent {
             utterance.volume = 1;
             speechSynthesis.speak(utterance);
         }
-    }
-    
-    fixSelector(selector) {
-        // Fix common CSS selector issues
-        return selector
-            .replace(/:/g, '\\:')  // Escape colons
-            .replace(/\[/g, '\\[')  // Escape square brackets
-            .replace(/\]/g, '\\]')  // Escape square brackets
-            .replace(/\s+/g, '')    // Remove spaces between classes
-            .replace(/\./g, '.')    // Ensure proper class notation
-            .replace(/\.{2,}/g, '.'); // Remove duplicate dots
-    }
-    
-    findElementByAlternativeMethods(action) {
-        console.log('Trying alternative methods to find element...');
-        
-        // Method 1: Try to find by text content
-        if (action.text) {
-            const elements = document.querySelectorAll('*');
-            for (const el of elements) {
-                if (el.textContent && el.textContent.trim().toLowerCase().includes(action.text.toLowerCase())) {
-                    console.log('Found element by text content:', el);
-                    return el;
-                }
-            }
-        }
-        
-        // Method 2: Try simplified selector (just the main class)
-        const simplifiedSelector = action.selector.split('.')[0] + '.' + action.selector.split('.')[1];
-        try {
-            const element = document.querySelector(simplifiedSelector);
-            if (element) {
-                console.log('Found element with simplified selector:', simplifiedSelector);
-                return element;
-            }
-        } catch (error) {
-            console.log('Simplified selector also failed:', simplifiedSelector);
-        }
-        
-        // Method 3: Try to find by partial class match
-        const classParts = action.selector.split('.');
-        for (let i = 1; i < classParts.length; i++) {
-            const partialSelector = '.' + classParts[i];
-            try {
-                const element = document.querySelector(partialSelector);
-                if (element) {
-                    console.log('Found element with partial selector:', partialSelector);
-                    return element;
-                }
-            } catch (error) {
-                // Continue trying
-            }
-        }
-        
-        // Method 4: Try to find by tag and text
-        if (action.text) {
-            const commonTags = ['a', 'button', 'div', 'span', 'p'];
-            for (const tag of commonTags) {
-                const elements = document.querySelectorAll(tag);
-                for (const el of elements) {
-                    if (el.textContent && el.textContent.trim().toLowerCase().includes(action.text.toLowerCase())) {
-                        console.log('Found element by tag and text:', tag, el);
-                        return el;
-                    }
-                }
-            }
-        }
-        
-        console.log('Could not find element with any alternative method');
-        return null;
     }
     
     handleMessage(message, sender, sendResponse) {

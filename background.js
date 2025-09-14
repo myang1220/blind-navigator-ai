@@ -15,7 +15,7 @@ class BlindNavigatorBackground {
     
     setupMessageListener() {
         chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-            this.handleMessage(message, sender, sendResponse);
+            return this.handleMessage(message, sender, sendResponse);
         });
     }
     

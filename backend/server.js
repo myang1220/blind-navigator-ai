@@ -203,7 +203,7 @@ IMPORTANT: For CSS selectors, use simple and valid selectors. Avoid complex Tail
 - Tag selectors like "button" or "a"
 - Simple attribute selectors like "[href='/login']"
 
-Return a JSON response with this structure. DO NOT RETURN ANY OTHER REASON UNDER ANY CIRCUMSTANCES, just a JSON object:
+Return a JSON response with this structure. DO NOT RETURN ANY OUSTIDE REASONING UNDER ANY CIRCUMSTANCES, just return a JSON object:
 {
     "action": {
         "type": "click|fill|navigate|scroll",
@@ -233,7 +233,15 @@ function parseCerebrasResponse(response) {
             throw new Error('Invalid response format');
         }
         
-        const parsed = JSON.parse(response);
+        // Remove markdown code blocks if present
+        let cleanResponse = response.trim();
+        if (cleanResponse.startsWith('```json')) {
+            cleanResponse = cleanResponse.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+        } else if (cleanResponse.startsWith('```')) {
+            cleanResponse = cleanResponse.replace(/^```\s*/, '').replace(/\s*```$/, '');
+        }
+        
+        const parsed = JSON.parse(cleanResponse);
         console.log("Parsed JSON:", parsed);
         
         if (!parsed || typeof parsed !== 'object') {
