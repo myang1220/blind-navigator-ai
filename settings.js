@@ -2,7 +2,7 @@ class SettingsManager {
     constructor() {
         this.speedSlider = document.getElementById('speedSlider');
         this.speedValue = document.getElementById('speedValue');
-        this.cerebrasKeyInput = document.getElementById('cerebrasKey');
+        this.backendStatus = document.getElementById('backendStatus');
         this.saveBtn = document.getElementById('saveBtn');
         this.testBtn = document.getElementById('testBtn');
         this.statusEl = document.getElementById('status');
@@ -15,15 +15,15 @@ class SettingsManager {
     
     async initializeSettings() {
         // Load saved settings
-        const result = await chrome.storage.sync.get(['ttsSpeed', 'cerebrasKey']);
+        const result = await chrome.storage.sync.get(['ttsSpeed']);
         if (result.ttsSpeed !== undefined) {
             this.currentSpeed = result.ttsSpeed;
             this.updateSpeedDisplay();
             this.updatePresetButtons();
         }
-        if (result.cerebrasKey) {
-            this.cerebrasKeyInput.value = result.cerebrasKey;
-        }
+        
+        // Check backend connection
+        await this.checkBackendConnection();
     }
     
     setupEventListeners() {
@@ -72,16 +72,7 @@ class SettingsManager {
     async saveSettings() {
         try {
             await chrome.storage.sync.set({
-                ttsSpeed: this.currentSpeed,
-                cerebrasKey: this.cerebrasKeyInput.value.trim()
-            });
-            
-            // Send updated keys to background script
-            await chrome.runtime.sendMessage({
-                action: 'setApiKeys',
-                keys: {
-                    cerebras: this.cerebrasKeyInput.value.trim()
-                }
+                ttsSpeed: this.currentSpeed
             });
             
             this.showStatus('Settings saved successfully!', 'success');
@@ -100,41 +91,42 @@ class SettingsManager {
     }
     
     async testAPI() {
-        const apiKey = this.cerebrasKeyInput.value.trim();
-        if (!apiKey) {
-            this.showStatus('Please enter your Cerebras API key first', 'error');
-            return;
-        }
-        
-        this.showStatus('Testing Cerebras API...', 'info');
+        this.showStatus('Testing backend connection...', 'info');
         
         try {
-            const response = await fetch('https://api.cerebras.ai/v1/chat/completions', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${apiKey}`
-                },
-                body: JSON.stringify({
-                    model: 'llama-4-scout-17b-16e-instruct',
-                    messages: [
-                        {
-                            role: 'user',
-                            content: 'Test message - please respond with "API test successful"'
-                        }
-                    ],
-                    max_tokens: 50
-                })
-            });
-            
+            // Test backend health endpoint
+            const response = await fetch('http://localhost:3000/health');
             if (response.ok) {
-                this.showStatus('Cerebras API test successful!', 'success');
+                this.showStatus('Backend connection successful!', 'success');
+                this.updateBackendStatus('✓ Backend connected', 'success');
             } else {
-                this.showStatus(`API test failed: ${response.status}`, 'error');
+                this.showStatus('Backend connection failed. Make sure backend is running.', 'error');
+                this.updateBackendStatus('⚠ Backend connection failed', 'error');
             }
         } catch (error) {
-            this.showStatus(`API test failed: ${error.message}`, 'error');
-            console.error('API test error:', error);
+            this.showStatus('Backend not running. Start with: cd backend && npm start', 'error');
+            this.updateBackendStatus('⚠ Backend not running', 'error');
+            console.error('Backend test error:', error);
+        }
+    }
+    
+    async checkBackendConnection() {
+        try {
+            const response = await fetch('http://localhost:3000/health');
+            if (response.ok) {
+                this.updateBackendStatus('✓ Backend connected', 'success');
+            } else {
+                this.updateBackendStatus('⚠ Backend connection failed', 'error');
+            }
+        } catch (error) {
+            this.updateBackendStatus('⚠ Backend not running', 'error');
+        }
+    }
+    
+    updateBackendStatus(message, type) {
+        if (this.backendStatus) {
+            this.backendStatus.textContent = message;
+            this.backendStatus.className = `backend-status ${type}`;
         }
     }
     

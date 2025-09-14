@@ -377,12 +377,12 @@
                 
                 <button id="testSpeechBtn" class="test-btn">Test Speech</button>
                 
-                <h3 style="margin-top: 20px;">🤖 AI Settings</h3>
+                <h3 style="margin-top: 20px;">🖥️ Backend Status</h3>
                 
-                <div class="api-key-section">
-                    <label for="apiKeyInput">API Key (Optional):</label>
-                    <input type="password" id="apiKeyInput" placeholder="Enter your API key for enhanced AI features">
-                    <div id="apiKeyStatus" class="api-key-status"></div>
+                <div class="backend-status-section">
+                    <div id="backendStatus" class="backend-status">Checking connection...</div>
+                    <p class="backend-info">Make sure the backend server is running:<br>
+                    <code>cd backend && npm start</code></p>
                 </div>
             </div>
         </div>

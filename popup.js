@@ -28,8 +28,7 @@ class BlindNavigatorPopup {
         this.speedValue = document.getElementById('speedValue');
         this.presetBtns = document.querySelectorAll('.preset-btn');
         this.testSpeechBtn = document.getElementById('testSpeechBtn');
-        this.apiKeyInput = document.getElementById('apiKeyInput');
-        this.apiKeyStatus = document.getElementById('apiKeyStatus');
+        this.backendStatus = document.getElementById('backendStatus');
         
         this.currentSpeed = 1.0;
         this.currentView = 'main';
@@ -72,7 +71,6 @@ class BlindNavigatorPopup {
         });
         
         this.testSpeechBtn.addEventListener('click', () => this.testSpeech());
-        this.apiKeyInput.addEventListener('input', () => this.saveApiKey());
         
         // Listen for messages from content script
         chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -141,8 +139,8 @@ class BlindNavigatorPopup {
             }
         } catch (error) {
             console.error('Error processing instruction:', error);
-            this.updateStatus('Error processing instruction');
-            this.speak('Error processing instruction');
+            this.updateStatus('Backend connection error - make sure backend is running');
+            this.speak('Backend connection error. Please start the backend server.');
         } finally {
             this.hideLoading();
         }
@@ -166,8 +164,8 @@ class BlindNavigatorPopup {
             }
         } catch (error) {
             console.error('Error getting summary:', error);
-            this.updateStatus('Error getting summary');
-            this.speak('Error getting summary');
+            this.updateStatus('Backend connection error - make sure backend is running');
+            this.speak('Backend connection error. Please start the backend server.');
         } finally {
             this.hideLoading();
         }
@@ -191,8 +189,8 @@ class BlindNavigatorPopup {
             }
         } catch (error) {
             console.error('Error getting suggestions:', error);
-            this.updateStatus('Error getting suggestions');
-            this.speak('Error generating suggestions');
+            this.updateStatus('Backend connection error - make sure backend is running');
+            this.speak('Backend connection error. Please start the backend server.');
         } finally {
             this.hideLoading();
         }
@@ -219,18 +217,37 @@ class BlindNavigatorPopup {
     async initializeSettings() {
         // Load saved settings
         try {
-            const result = await chrome.storage.sync.get(['ttsSpeed', 'apiKey']);
+            const result = await chrome.storage.sync.get(['ttsSpeed']);
             if (result.ttsSpeed !== undefined) {
                 this.currentSpeed = result.ttsSpeed;
                 this.updateSpeedDisplay();
                 this.updatePresetButtons();
             }
-            if (result.apiKey !== undefined) {
-                this.apiKeyInput.value = result.apiKey;
-                this.updateApiKeyStatus();
-            }
+            
+            // Check backend connection
+            await this.checkBackendConnection();
         } catch (error) {
             console.error('Error loading settings:', error);
+        }
+    }
+    
+    async checkBackendConnection() {
+        try {
+            const response = await fetch('http://localhost:3000/health');
+            if (response.ok) {
+                this.updateBackendStatus('✓ Backend connected', 'success');
+            } else {
+                this.updateBackendStatus('⚠ Backend connection failed', 'error');
+            }
+        } catch (error) {
+            this.updateBackendStatus('⚠ Backend not running - start with: cd backend && npm start', 'error');
+        }
+    }
+    
+    updateBackendStatus(message, type) {
+        if (this.backendStatus) {
+            this.backendStatus.textContent = message;
+            this.backendStatus.className = `backend-status ${type}`;
         }
     }
     
@@ -259,35 +276,6 @@ class BlindNavigatorPopup {
         }
     }
     
-    async saveApiKey() {
-        try {
-            const apiKey = this.apiKeyInput.value.trim();
-            await chrome.storage.sync.set({
-                apiKey: apiKey
-            });
-            
-            // Notify background script of API key change
-            chrome.runtime.sendMessage({
-                action: 'setApiKeys',
-                keys: { cerebras: apiKey }
-            });
-            
-            this.updateApiKeyStatus();
-        } catch (error) {
-            console.error('Error saving API key:', error);
-        }
-    }
-    
-    updateApiKeyStatus() {
-        const apiKey = this.apiKeyInput.value.trim();
-        if (apiKey) {
-            this.apiKeyStatus.textContent = '✓ API key saved';
-            this.apiKeyStatus.style.color = '#4CAF50';
-        } else {
-            this.apiKeyStatus.textContent = 'Using simple interpretation (no API key)';
-            this.apiKeyStatus.style.color = 'rgba(255, 255, 255, 0.7)';
-        }
-    }
     
     async testSpeech() {
         if (!('speechSynthesis' in window)) {

@@ -297,12 +297,17 @@ class BlindNavigatorContent {
             found.forEach((element, index) => {
                 const text = this.getElementText(element);
                 if (text) {
+                    // Generate ID if element doesn't have one
+                    if (!element.id) {
+                        element.id = `blind-nav-clickable-${elements.length}`;
+                    }
+                    
                     elements.push({
                         type: 'clickable',
                         text: text,
                         selector: this.generateSelector(element),
                         element: element,
-                        id: `clickable-${elements.length}`
+                        id: element.id
                     });
                 }
             });
@@ -322,13 +327,18 @@ class BlindNavigatorContent {
                 const placeholder = element.placeholder || '';
                 const name = element.name || element.id || '';
                 
+                // Generate ID if element doesn't have one
+                if (!element.id) {
+                    element.id = `blind-nav-input-${elements.length}`;
+                }
+                
                 elements.push({
                     type: 'input',
                     text: text || placeholder || name || 'Input field',
                     selector: this.generateSelector(element),
                     element: element,
                     inputType: element.type || element.tagName.toLowerCase(),
-                    id: `input-${elements.length}`
+                    id: element.id
                 });
             });
         });
@@ -427,25 +437,14 @@ class BlindNavigatorContent {
     async performClick(action) {
         let element = null;
         
-        // Try the original selector first
-        try {
-            element = document.querySelector(action.selector);
-        } catch (error) {
-            console.log('Original selector failed, trying to fix it:', action.selector);
-            // Try to fix the selector by escaping special characters
-            const fixedSelector = this.fixSelector(action.selector);
-            try {
-                element = document.querySelector(fixedSelector);
-                console.log('Fixed selector worked:', fixedSelector);
-            } catch (error2) {
-                console.log('Fixed selector also failed:', fixedSelector);
-                // Try alternative approaches
-                element = this.findElementByAlternativeMethods(action);
-            }
+        // Use ID to find element
+        if (action.id) {
+            element = document.getElementById(action.id);
+            console.log('Looking for element with ID:', action.id);
         }
         
         if (!element) {
-            return { success: false, message: 'Element not found with selector: ' + action.selector };
+            return { success: false, message: 'Element not found with ID: ' + action.id };
         }
         
         // Scroll element into view
@@ -464,9 +463,9 @@ class BlindNavigatorContent {
     }
     
     async performFill(action) {
-        const element = document.querySelector(action.selector);
+        const element = document.getElementById(action.id);
         if (!element) {
-            return { success: false, message: 'Input element not found' };
+            return { success: false, message: 'Input element not found with ID: ' + action.id };
         }
         
         // Focus the element

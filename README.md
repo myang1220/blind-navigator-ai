@@ -21,19 +21,49 @@ An agentic AI Chrome extension that helps blind users navigate any website throu
 
 ## Setup
 
-### API Keys (Optional but Recommended)
+### Backend Server (Required)
 
-For enhanced functionality, you can configure API keys:
+This extension now uses a local backend server for enhanced security and performance:
+
+1. **Install Backend Dependencies:**
+   ```bash
+   ./setup-backend.sh
+   ```
+
+2. **Configure API Key:**
+   Edit `backend/.env` and set your Cerebras API key:
+   ```
+   CEREBRAS_API_KEY=your_actual_api_key_here
+   PORT=3000
+   ```
+
+3. **Start Backend Server:**
+   ```bash
+   cd backend
+   npm start
+   ```
+
+4. **Test Backend Connection:**
+   ```bash
+   cd backend
+   npm test
+   ```
+
+### API Keys (Required for Full Functionality)
+
+For enhanced functionality, you need to configure your API key:
 
 1. **Cerebras API**: For intelligent instruction interpretation
    - Sign up at [Cerebras AI](https://cerebras.ai)
    - Get your API key from the dashboard
-   - Add it to the extension settings
+   - Add it to the backend/.env file
 
-### Without API Keys
+### Without Backend
 
-The extension works perfectly with built-in browser features:
-- Uses browser's built-in text-to-speech
+The extension requires the backend server to be running. If the backend is not available:
+- The extension will show connection errors
+- AI-powered features will not work
+- Basic functionality may be limited
 - Uses simple rule-based instruction interpretation
 
 ## Usage
