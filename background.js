@@ -128,6 +128,15 @@ class BlindNavigatorBackground {
             const interpretation = await this.callCerebrasAPI(instruction);
             console.log('Interpretation result:', interpretation);
             
+            // Ensure interpretation is a valid object
+            if (!interpretation || typeof interpretation !== 'object') {
+                console.error('Invalid interpretation result:', interpretation);
+                return { 
+                    success: false, 
+                    message: 'Failed to interpret instruction. Please try again.' 
+                };
+            }
+            
             if (!interpretation.success) {
                 return interpretation;
             }
@@ -136,6 +145,10 @@ class BlindNavigatorBackground {
             const executionResult = await this.executeAction(interpretation.action);
             console.log('Execution result:', executionResult);
             
+            if (!executionResult) {
+                return { success: true, message: 'Something happened but I dont know what' };
+            }
+
             return {
                 success: executionResult.success,
                 message: executionResult.message
@@ -148,19 +161,22 @@ class BlindNavigatorBackground {
     
     async callCerebrasAPI(instruction) {
         try {
-            // Get API key from storage
-            const result = await chrome.storage.sync.get(['cerebrasKey']);
-            const apiKey = result.cerebrasKey;
+            console.log('Calling Cerebras API with instruction:', instruction);
             
-            if (!apiKey) {
+            // Get API key from instance variable
+            const apiKey = this.apiKeys.cerebras;
+            
+            if (!apiKey || apiKey === 'YOUR_CEREBRAS_API_KEY_HERE') {
+                console.log('API key not configured');
                 return {
                     success: false,
-                    message: 'Cerebras API key not configured. Please set it in settings.'
+                    message: 'Cerebras API key not configured. Please set it in the code.'
                 };
             }
             
             // Build the prompt with website context
             const prompt = this.buildCerebrasPrompt(instruction);
+            console.log('Generated prompt:', prompt);
             
             // Make API call to Cerebras
             const response = await fetch('https://api.cerebras.ai/v1/chat/completions', {
@@ -182,15 +198,28 @@ class BlindNavigatorBackground {
                 })
             });
             
+            console.log('API response status:', response.status);
+            
             if (!response.ok) {
-                throw new Error(`Cerebras API error: ${response.status}`);
+                const errorText = await response.text();
+                console.error('API error response:', errorText);
+                throw new Error(`Cerebras API error: ${response.status} - ${errorText}`);
             }
             
             const data = await response.json();
+            console.log('API response data:', data);
+            
+            if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+                throw new Error('Invalid API response format');
+            }
+            
             const aiResponse = data.choices[0].message.content;
+            console.log('AI response content:', aiResponse);
             
             // Parse the AI response
-            return this.parseCerebrasResponse(aiResponse);
+            const result = this.parseCerebrasResponse(aiResponse);
+            console.log('Parsed result:', result);
+            return result;
             
         } catch (error) {
             console.error('Cerebras API error:', error);
@@ -221,12 +250,19 @@ Website Context:
 User Instruction: "${instruction}"
 
 Based on the user's instruction and the available website elements, determine what action to take. 
+If no exact matches exist, use the closest match available out of the interactable elements.
+
+IMPORTANT: For CSS selectors, use simple and valid selectors. Avoid complex Tailwind CSS classes with special characters like colons, brackets, or spaces. Prefer:
+- Simple class names like ".button" or ".link"
+- ID selectors like "#submit-btn"
+- Tag selectors like "button" or "a"
+- Simple attribute selectors like "[href='/login']"
 
 Return a JSON response with this structure. Do not return any other reasoning, just a JSON object:
 {
     "action": {
         "type": "click|fill|navigate|scroll",
-        "selector": "CSS selector for the element",
+        "selector": "Simple CSS selector for the element (avoid special characters)",
         "text": "Description of what will be clicked/filled",
         "value": "Value to fill (for fill actions)",
         "url": "URL to navigate to (for navigate actions)",
@@ -246,8 +282,18 @@ If the instruction is unclear or no suitable action can be determined, return (w
     
     parseCerebrasResponse(response) {
         try {
-            console.log("response", response);
+            console.log("Raw AI response:", response);
+            
+            if (!response || typeof response !== 'string') {
+                throw new Error('Invalid response format');
+            }
+            
             const parsed = JSON.parse(response);
+            console.log("Parsed JSON:", parsed);
+            
+            if (!parsed || typeof parsed !== 'object') {
+                throw new Error('Response is not a valid JSON object');
+            }
             
             if (!parsed.action) {
                 return {
@@ -264,9 +310,10 @@ If the instruction is unclear or no suitable action can be determined, return (w
             };
         } catch (error) {
             console.error('Error parsing Cerebras response:', error);
+            console.error('Response that failed to parse:', response);
             return {
                 success: false,
-                message: 'Error parsing AI response'
+                message: 'Error parsing AI response: ' + error.message
             };
         }
     }

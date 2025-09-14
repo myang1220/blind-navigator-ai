@@ -127,6 +127,10 @@ class BlindNavigatorPopup {
                 instruction: instruction.trim()
             });
             console.log("response from background script", response);
+
+            if (!response) {
+                return;
+            }
             
             if (response.success) {
                 this.updateStatus(response.message);

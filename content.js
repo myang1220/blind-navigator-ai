@@ -425,9 +425,27 @@ class BlindNavigatorContent {
     }
     
     async performClick(action) {
-        const element = document.querySelector(action.selector);
+        let element = null;
+        
+        // Try the original selector first
+        try {
+            element = document.querySelector(action.selector);
+        } catch (error) {
+            console.log('Original selector failed, trying to fix it:', action.selector);
+            // Try to fix the selector by escaping special characters
+            const fixedSelector = this.fixSelector(action.selector);
+            try {
+                element = document.querySelector(fixedSelector);
+                console.log('Fixed selector worked:', fixedSelector);
+            } catch (error2) {
+                console.log('Fixed selector also failed:', fixedSelector);
+                // Try alternative approaches
+                element = this.findElementByAlternativeMethods(action);
+            }
+        }
+        
         if (!element) {
-            return { success: false, message: 'Element not found' };
+            return { success: false, message: 'Element not found with selector: ' + action.selector };
         }
         
         // Scroll element into view
@@ -512,6 +530,76 @@ class BlindNavigatorContent {
             utterance.volume = 1;
             speechSynthesis.speak(utterance);
         }
+    }
+    
+    fixSelector(selector) {
+        // Fix common CSS selector issues
+        return selector
+            .replace(/:/g, '\\:')  // Escape colons
+            .replace(/\[/g, '\\[')  // Escape square brackets
+            .replace(/\]/g, '\\]')  // Escape square brackets
+            .replace(/\s+/g, '')    // Remove spaces between classes
+            .replace(/\./g, '.')    // Ensure proper class notation
+            .replace(/\.{2,}/g, '.'); // Remove duplicate dots
+    }
+    
+    findElementByAlternativeMethods(action) {
+        console.log('Trying alternative methods to find element...');
+        
+        // Method 1: Try to find by text content
+        if (action.text) {
+            const elements = document.querySelectorAll('*');
+            for (const el of elements) {
+                if (el.textContent && el.textContent.trim().toLowerCase().includes(action.text.toLowerCase())) {
+                    console.log('Found element by text content:', el);
+                    return el;
+                }
+            }
+        }
+        
+        // Method 2: Try simplified selector (just the main class)
+        const simplifiedSelector = action.selector.split('.')[0] + '.' + action.selector.split('.')[1];
+        try {
+            const element = document.querySelector(simplifiedSelector);
+            if (element) {
+                console.log('Found element with simplified selector:', simplifiedSelector);
+                return element;
+            }
+        } catch (error) {
+            console.log('Simplified selector also failed:', simplifiedSelector);
+        }
+        
+        // Method 3: Try to find by partial class match
+        const classParts = action.selector.split('.');
+        for (let i = 1; i < classParts.length; i++) {
+            const partialSelector = '.' + classParts[i];
+            try {
+                const element = document.querySelector(partialSelector);
+                if (element) {
+                    console.log('Found element with partial selector:', partialSelector);
+                    return element;
+                }
+            } catch (error) {
+                // Continue trying
+            }
+        }
+        
+        // Method 4: Try to find by tag and text
+        if (action.text) {
+            const commonTags = ['a', 'button', 'div', 'span', 'p'];
+            for (const tag of commonTags) {
+                const elements = document.querySelectorAll(tag);
+                for (const el of elements) {
+                    if (el.textContent && el.textContent.trim().toLowerCase().includes(action.text.toLowerCase())) {
+                        console.log('Found element by tag and text:', tag, el);
+                        return el;
+                    }
+                }
+            }
+        }
+        
+        console.log('Could not find element with any alternative method');
+        return null;
     }
     
     handleMessage(message, sender, sendResponse) {
