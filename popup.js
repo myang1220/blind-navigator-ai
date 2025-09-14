@@ -9,6 +9,9 @@ class BlindNavigatorPopup {
     }
     
     initializeElements() {
+        // Main view elements
+        this.mainView = document.getElementById('mainView');
+        this.settingsView = document.getElementById('settingsView');
         this.statusEl = document.getElementById('status');
         this.textInput = document.getElementById('textInput');
         this.submitBtn = document.getElementById('submitBtn');
@@ -18,6 +21,18 @@ class BlindNavigatorPopup {
         this.suggestionsBtn = document.getElementById('suggestionsBtn');
         this.directBtn = document.getElementById('directBtn');
         this.settingsBtn = document.getElementById('settingsBtn');
+        
+        // Settings view elements
+        this.exitBtn = document.getElementById('exitBtn');
+        this.speedSlider = document.getElementById('speedSlider');
+        this.speedValue = document.getElementById('speedValue');
+        this.presetBtns = document.querySelectorAll('.preset-btn');
+        this.testSpeechBtn = document.getElementById('testSpeechBtn');
+        this.apiKeyInput = document.getElementById('apiKeyInput');
+        this.apiKeyStatus = document.getElementById('apiKeyStatus');
+        
+        this.currentSpeed = 1.0;
+        this.currentView = 'main';
     }
     
     setupEventListeners() {
@@ -34,7 +49,30 @@ class BlindNavigatorPopup {
         this.summaryBtn.addEventListener('click', () => this.requestSummary());
         this.suggestionsBtn.addEventListener('click', () => this.requestSuggestions());
         this.directBtn.addEventListener('click', () => this.showDirectInput());
-        this.settingsBtn.addEventListener('click', () => this.openSettings());
+        this.settingsBtn.addEventListener('click', () => this.showSettings());
+        this.exitBtn.addEventListener('click', () => this.showMain());
+        
+        // Settings event listeners
+        this.speedSlider.addEventListener('input', (e) => {
+            this.currentSpeed = parseFloat(e.target.value);
+            this.updateSpeedDisplay();
+            this.updatePresetButtons();
+            this.saveSettings();
+        });
+        
+        this.presetBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const speed = parseFloat(e.target.dataset.speed);
+                this.currentSpeed = speed;
+                this.speedSlider.value = speed;
+                this.updateSpeedDisplay();
+                this.updatePresetButtons();
+                this.saveSettings();
+            });
+        });
+        
+        this.testSpeechBtn.addEventListener('click', () => this.testSpeech());
+        this.apiKeyInput.addEventListener('input', () => this.saveApiKey());
         
         // Listen for messages from content script
         chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -83,10 +121,12 @@ class BlindNavigatorPopup {
         
         try {
             // Send instruction to background script
+            console.log("sending instruction to background script", instruction);
             const response = await chrome.runtime.sendMessage({
                 action: 'processInstruction',
                 instruction: instruction.trim()
             });
+            console.log("response from background script", response);
             
             if (response.success) {
                 this.updateStatus(response.message);
@@ -159,8 +199,114 @@ class BlindNavigatorPopup {
         this.updateStatus('Type your instruction');
     }
     
-    openSettings() {
-        chrome.runtime.openOptionsPage();
+    showSettings() {
+        this.mainView.classList.remove('active');
+        this.settingsView.classList.add('active');
+        this.currentView = 'settings';
+        this.initializeSettings();
+    }
+    
+    showMain() {
+        this.settingsView.classList.remove('active');
+        this.mainView.classList.add('active');
+        this.currentView = 'main';
+    }
+    
+    async initializeSettings() {
+        // Load saved settings
+        try {
+            const result = await chrome.storage.sync.get(['ttsSpeed', 'apiKey']);
+            if (result.ttsSpeed !== undefined) {
+                this.currentSpeed = result.ttsSpeed;
+                this.updateSpeedDisplay();
+                this.updatePresetButtons();
+            }
+            if (result.apiKey !== undefined) {
+                this.apiKeyInput.value = result.apiKey;
+                this.updateApiKeyStatus();
+            }
+        } catch (error) {
+            console.error('Error loading settings:', error);
+        }
+    }
+    
+    updateSpeedDisplay() {
+        this.speedValue.textContent = `${this.currentSpeed.toFixed(1)}x`;
+        this.speedSlider.value = this.currentSpeed;
+    }
+    
+    updatePresetButtons() {
+        this.presetBtns.forEach(btn => {
+            btn.classList.remove('active');
+            const btnSpeed = parseFloat(btn.dataset.speed);
+            if (Math.abs(btnSpeed - this.currentSpeed) < 0.05) {
+                btn.classList.add('active');
+            }
+        });
+    }
+    
+    async saveSettings() {
+        try {
+            await chrome.storage.sync.set({
+                ttsSpeed: this.currentSpeed
+            });
+        } catch (error) {
+            console.error('Error saving settings:', error);
+        }
+    }
+    
+    async saveApiKey() {
+        try {
+            const apiKey = this.apiKeyInput.value.trim();
+            await chrome.storage.sync.set({
+                apiKey: apiKey
+            });
+            
+            // Notify background script of API key change
+            chrome.runtime.sendMessage({
+                action: 'setApiKeys',
+                keys: { cerebras: apiKey }
+            });
+            
+            this.updateApiKeyStatus();
+        } catch (error) {
+            console.error('Error saving API key:', error);
+        }
+    }
+    
+    updateApiKeyStatus() {
+        const apiKey = this.apiKeyInput.value.trim();
+        if (apiKey) {
+            this.apiKeyStatus.textContent = '✓ API key saved';
+            this.apiKeyStatus.style.color = '#4CAF50';
+        } else {
+            this.apiKeyStatus.textContent = 'Using simple interpretation (no API key)';
+            this.apiKeyStatus.style.color = 'rgba(255, 255, 255, 0.7)';
+        }
+    }
+    
+    async testSpeech() {
+        if (!('speechSynthesis' in window)) {
+            this.updateStatus('Speech synthesis not supported in this browser');
+            return;
+        }
+        
+        this.updateStatus('Testing speech output...');
+        
+        const utterance = new SpeechSynthesisUtterance('This is a test of your current speech speed settings. The Blind Navigator AI is ready to help you navigate the web.');
+        utterance.rate = this.currentSpeed;
+        utterance.pitch = 1;
+        utterance.volume = 1;
+        
+        utterance.onend = () => {
+            this.updateStatus('Speech test completed successfully!');
+        };
+        
+        utterance.onerror = (event) => {
+            this.updateStatus(`Speech test failed: ${event.error}`);
+        };
+        
+        speechSynthesis.speak(utterance);
     }
     
     async speak(text) {
