@@ -11,7 +11,6 @@ class BlindNavigatorBackground {
     initialize() {
         this.setupMessageListener();
         this.setupKeyboardShortcuts();
-        this.setupTabListener();
     }
     
     setupMessageListener() {
@@ -28,39 +27,6 @@ class BlindNavigatorBackground {
         });
     }
     
-    setupTabListener() {
-        // Track visited URLs to avoid opening popup on every navigation
-        this.visitedUrls = new Set();
-        
-        chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-            // Only trigger when page is fully loaded and URL has changed
-            if (changeInfo.status === 'complete' && tab.url) {
-                // Check if this is a new URL we haven't seen
-                if (!this.visitedUrls.has(tab.url)) {
-                    this.visitedUrls.add(tab.url);
-                    
-                    // Small delay to ensure page is fully ready
-                    setTimeout(() => {
-                        this.openPopupForNewPage(tabId, tab.url);
-                    }, 1000);
-                }
-            }
-        });
-    }
-    
-    async openPopupForNewPage(tabId, url) {
-        try {
-            // Check if popup is already open by trying to send a message
-            chrome.runtime.sendMessage({ action: 'ping' }, (response) => {
-                if (chrome.runtime.lastError) {
-                    // Popup is not open, so we can open it
-                    chrome.action.openPopup();
-                }
-            });
-        } catch (error) {
-            console.log('Could not auto-open popup:', error);
-        }
-    }
     
     
     async toggleExtension() {
@@ -98,6 +64,10 @@ class BlindNavigatorBackground {
                     sendResponse({ success: true });
                     break;
                     
+                case 'getOverlayHTML':
+                    const overlayHTML = await this.getOverlayHTML();
+                    sendResponse({ html: overlayHTML });
+                    break;
                     
                 default:
                     sendResponse({ success: false, message: 'Unknown action' });
@@ -285,6 +255,29 @@ class BlindNavigatorBackground {
         } catch (error) {
             console.error('Error getting suggestions:', error);
             return { success: false, message: 'Error generating suggestions' };
+        }
+    }
+    
+    async getOverlayHTML() {
+        try {
+            // Read the overlay HTML file
+            const response = await fetch(chrome.runtime.getURL('overlay.html'));
+            const html = await response.text();
+            
+            // Also read the overlay JS file
+            const jsResponse = await fetch(chrome.runtime.getURL('overlay.js'));
+            const js = await jsResponse.text();
+            
+            // Replace the script tag with inline JavaScript
+            const combinedHTML = html.replace(
+                '<script src="overlay.js"></script>',
+                `<script>${js}</script>`
+            );
+            
+            return combinedHTML;
+        } catch (error) {
+            console.error('Error getting overlay HTML:', error);
+            return '<html><body>Error loading overlay</body></html>';
         }
     }
     

@@ -41,7 +41,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["audio/*"],
+      "resources": ["audio/*", "overlay.html", "overlay.js"],
       "matches": ["<all_urls>"]
     }
   ]

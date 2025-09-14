@@ -4,13 +4,16 @@ class BlindNavigatorContent {
         this.currentElement = null;
         this.interactableElements = [];
         this.websiteData = null;
+        this.overlayInjected = false;
         
         this.initialize();
     }
     
     initialize() {
         this.setupMessageListener();
+        this.setupOverlayMessageListener();
         this.analyzeWebsite();
+        this.injectOverlay();
     }
     
     setupMessageListener() {
@@ -499,6 +502,135 @@ class BlindNavigatorContent {
                 this.announcePageContent();
                 sendResponse({ success: true });
                 break;
+        }
+    }
+    
+    setupOverlayMessageListener() {
+        // Listen for messages from the overlay
+        window.addEventListener('message', (event) => {
+            if (event.data.type === 'BLIND_NAV_OVERLAY_MESSAGE') {
+                this.handleOverlayMessage(event.data.data).then(response => {
+                    // Send response back to overlay
+                    window.postMessage({
+                        type: 'BLIND_NAV_OVERLAY_RESPONSE',
+                        data: response
+                    }, '*');
+                });
+            }
+        });
+    }
+    
+    async handleOverlayMessage(message) {
+        switch (message.action) {
+            case 'processInstruction':
+                return await this.processInstructionFromOverlay(message.instruction);
+            case 'getSummary':
+                return await this.getSummaryForOverlay();
+            case 'getSuggestions':
+                return await this.getSuggestionsForOverlay();
+            case 'highlightElements':
+                return await this.highlightElementsForOverlay();
+            default:
+                return { success: false, message: 'Unknown action' };
+        }
+    }
+    
+    async processInstructionFromOverlay(instruction) {
+        try {
+            // Send to background script for processing
+            const response = await chrome.runtime.sendMessage({
+                action: 'processInstruction',
+                instruction: instruction
+            });
+            
+            return response;
+        } catch (error) {
+            console.error('Error processing instruction from overlay:', error);
+            return { success: false, message: error.message };
+        }
+    }
+    
+    async getSummaryForOverlay() {
+        try {
+            const summary = this.generateWebsiteSummary();
+            return { success: true, summary: summary };
+        } catch (error) {
+            console.error('Error getting summary:', error);
+            return { success: false, message: error.message };
+        }
+    }
+    
+    async getSuggestionsForOverlay() {
+        try {
+            const suggestions = this.generateActionSuggestions();
+            return { success: true, suggestions: suggestions };
+        } catch (error) {
+            console.error('Error getting suggestions:', error);
+            return { success: false, message: error.message };
+        }
+    }
+    
+    async highlightElementsForOverlay() {
+        try {
+            this.highlightInteractableElements();
+            return { success: true };
+        } catch (error) {
+            console.error('Error highlighting elements:', error);
+            return { success: false, message: error.message };
+        }
+    }
+    
+    injectOverlay() {
+        if (this.overlayInjected) return;
+        
+        try {
+            // Create iframe for the overlay
+            const iframe = document.createElement('iframe');
+            iframe.id = 'blind-nav-overlay-iframe';
+            iframe.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                border: none;
+                pointer-events: none;
+                z-index: 2147483646;
+                background: transparent;
+            `;
+            
+            // Get the overlay HTML content
+            chrome.runtime.sendMessage({ action: 'getOverlayHTML' }, (response) => {
+                if (response && response.html) {
+                    // Create a blob URL for the HTML content
+                    const blob = new Blob([response.html], { type: 'text/html' });
+                    const url = URL.createObjectURL(blob);
+                    iframe.src = url;
+                    
+                    // Make the overlay clickable
+                    iframe.style.pointerEvents = 'auto';
+                    
+                    // Add to page
+                    document.documentElement.appendChild(iframe);
+                    this.overlayInjected = true;
+                    
+                    // Clean up blob URL after iframe loads
+                    iframe.onload = () => {
+                        URL.revokeObjectURL(url);
+                    };
+                }
+            });
+            
+        } catch (error) {
+            console.error('Error injecting overlay:', error);
+        }
+    }
+    
+    removeOverlay() {
+        const iframe = document.getElementById('blind-nav-overlay-iframe');
+        if (iframe) {
+            iframe.remove();
+            this.overlayInjected = false;
         }
     }
 }
