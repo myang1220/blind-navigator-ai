@@ -11,6 +11,7 @@ class BlindNavigatorBackground {
     initialize() {
         this.setupMessageListener();
         this.setupKeyboardShortcuts();
+        this.setupTabListener();
     }
     
     setupMessageListener() {
@@ -25,6 +26,40 @@ class BlindNavigatorBackground {
                 this.toggleExtension();
             }
         });
+    }
+    
+    setupTabListener() {
+        // Track visited URLs to avoid opening popup on every navigation
+        this.visitedUrls = new Set();
+        
+        chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+            // Only trigger when page is fully loaded and URL has changed
+            if (changeInfo.status === 'complete' && tab.url) {
+                // Check if this is a new URL we haven't seen
+                if (!this.visitedUrls.has(tab.url)) {
+                    this.visitedUrls.add(tab.url);
+                    
+                    // Small delay to ensure page is fully ready
+                    setTimeout(() => {
+                        this.openPopupForNewPage(tabId, tab.url);
+                    }, 1000);
+                }
+            }
+        });
+    }
+    
+    async openPopupForNewPage(tabId, url) {
+        try {
+            // Check if popup is already open by trying to send a message
+            chrome.runtime.sendMessage({ action: 'ping' }, (response) => {
+                if (chrome.runtime.lastError) {
+                    // Popup is not open, so we can open it
+                    chrome.action.openPopup();
+                }
+            });
+        } catch (error) {
+            console.log('Could not auto-open popup:', error);
+        }
     }
     
     

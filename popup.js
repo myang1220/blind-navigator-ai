@@ -317,6 +317,10 @@ class BlindNavigatorPopup {
     
     handleMessage(message, sender, sendResponse) {
         switch (message.action) {
+            case 'ping':
+                // Respond to background script's ping to check if popup is open
+                sendResponse({ status: 'open' });
+                break;
             case 'updateStatus':
                 this.updateStatus(message.message);
                 break;
